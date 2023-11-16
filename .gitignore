@@ -19,3 +19,4 @@ build/
 romfs/gfx/
 temp/
 output/
+resources/sheets/*.t3s.png
