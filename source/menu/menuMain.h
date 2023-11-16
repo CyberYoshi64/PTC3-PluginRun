@@ -6,13 +6,15 @@
 
 typedef struct {
     C2D_TextBuf textbuf;
-    struct header {
+    struct {
         C2D_Text    text;
         float       px;
         float       py;
         float       sx;
         float       sy;
     } header;
+    u32 buttonLabelFG;
+    u32 buttonLabelBG;
     Button      play;
     C2D_Text    playText;
     Button      updates;
@@ -24,9 +26,9 @@ typedef struct {
     float       alpha;
 } MenuMain__Struct;
 
-void menuMain__Init(void);
-void menuMain__Exit(void);
-int menuMain__Act(void);
-void menuMain__Render(gfxScreen_t screen);
-bool menuMain__AnimIn(void);
-bool menuMain__AnimOut(void);
+void    menuMain__Init(void);
+void    menuMain__Exit(void);
+int     menuMain__Act(void);
+void    menuMain__Render(gfxScreen_t screen);
+bool    menuMain__AnimIn(void);
+bool    menuMain__AnimOut(void);

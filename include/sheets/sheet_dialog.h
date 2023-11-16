@@ -6,7 +6,5 @@
 #define sheet_dialog_button_idx 2
 #define sheet_dialog_buttonMiddle_idx 3
 #define sheet_dialog_buttonSplit_idx 4
-#define sheet_dialog_button3_idx 5
-#define sheet_dialog_button3Middle_idx 6
-#define sheet_dialog_waiticon_idx 7
-#define sheet_dialog_waiticon_bg_idx 8
+#define sheet_dialog_waiticon_idx 5
+#define sheet_dialog_waiticon_bg_idx 6

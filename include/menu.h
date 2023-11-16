@@ -1,8 +1,9 @@
 #pragma once
 
 #include <3ds.h>
+#include "main.h"
 #include "menu/menuMain.h"
-#include "hidRead.h"
+#include "menu/menuPlay.h"
 #include "menuDialog.h"
 #include "menuButton.h"
 
@@ -37,6 +38,7 @@ typedef struct {
     float       alpha;
     union {
         MenuMain__Struct    main;
+        MenuPlay__Struct    play;
         u8                  pad[32700];
     };
 } CTR_ALIGN(1024) MenuStruct;
@@ -44,6 +46,7 @@ typedef struct {
 #define MENUSTRUCT_SIZE sizeof(MenuStruct)
 
 extern MenuStructPointers menuMain__Ptr;
+extern MenuStructPointers menuPlay__Ptr;
 extern MenuStruct* menuStruct;
 
 extern MenuStructPointers* currMenuPtr;

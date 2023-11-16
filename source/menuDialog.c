@@ -114,8 +114,13 @@ void menuDialogPrepare(MenuDialog* self) {
             } else if (lbOpp<-1) {
                 tb[strlen(tb)-1] = '\n';
             } else {
-                tb[lbOpp] = '\n';
-                tb[lbOpp + 1] = 0;
+                if (tb[lbOpp] != ' ') {
+                    tb[lbOpp + 1] = '\n';
+                    tb[lbOpp + 2] = 0;
+                } else {
+                    tb[lbOpp] = '\n';
+                    tb[lbOpp + 1] = 0;
+                }
                 i = lo + lbOpp;
             }
             memcpy(buf + strlen(buf), tb, strlen(tb));
@@ -176,12 +181,11 @@ void menuDialog__Render(MenuDialog* self, gfxScreen_t screen) {
         C2D_Color32f(.5, .1, .2, self->boxAlpha),
         C2D_Color32f(.9, .4, .5, self->boxAlpha)
     };
-    u32 waitColor[5] = {
+    u32 waitColor[4] = {
         C2D_Color32f(.05, .15, .15, self->boxAlpha),
-        C2D_Color32f(0, 1, 1, self->boxAlpha),
-        C2D_Color32f(0, .7, .8, self->boxAlpha),
-        C2D_Color32f(0, .4, .5, self->boxAlpha),
-        C2D_Color32f(0, .2, .4, self->boxAlpha),
+        C2D_Color32f(.5, 1, 1, self->boxAlpha),
+        C2D_Color32f(0, .75, 1, self->boxAlpha),
+        C2D_Color32f(0, .3, .8, self->boxAlpha),
     };
     bool drawSplit = true;
     if (!(self->mode & MENUDIALOG_ENABLE_BUTTON__2)) {
@@ -285,13 +289,12 @@ void menuDialog__Render(MenuDialog* self, gfxScreen_t screen) {
             i = C2D_SpriteSheetGetImage(menuDialogSheet, sheet_dialog_waiticon_idx);
             C2D_SetImageTint(&t, C2D_TopLeft, waitColor[1], 1);
             C2D_SetImageTint(&t, C2D_BotLeft, waitColor[2], 1);
-            C2D_SetImageTint(&t, C2D_BotRight, waitColor[3], 1);
-            C2D_SetImageTint(&t, C2D_TopRight, waitColor[4], 1);
+            C2D_RightImageTint(&t, waitColor[3], 1);
             C2D_DrawImage(i, &p, &t);
             p.angle = 0;
             if (hasProgress) {
                 C2D_DrawRectSolid(160 - 110 * self->boxScale, p.pos.y - 8 * self->boxScale, 0, 180 * self->boxScale, 16 * self->boxScale, waitColor[0]);
-                C2D_DrawRectangle(160 - 110 * self->boxScale, p.pos.y - 8 * self->boxScale, 0, 180 * C2D_Clamp(self->progress, 0, 1) * self->boxScale, 16 * self->boxScale, waitColor[1], waitColor[2], waitColor[4], waitColor[3]);
+                C2D_DrawRectangle(160 - 110 * self->boxScale, p.pos.y - 8 * self->boxScale, 0, 180 * C2D_Clamp(self->progress, 0, 1) * self->boxScale, 16 * self->boxScale, waitColor[1], waitColor[2], waitColor[3], waitColor[3]);
             }
         }
         

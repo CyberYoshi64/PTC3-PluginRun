@@ -75,6 +75,9 @@ int menuNext(MenuID id) {
     case MENUID_MAIN:
         nextMenuPtr = &menuMain__Ptr;
         break;
+    case MENUID_PLAY:
+        nextMenuPtr = &menuPlay__Ptr;
+        break;
     default:
         nextMenuPtr = &menuDefaultPtr;
         break;
@@ -147,7 +150,7 @@ bool updateDlgWaitCallback(u32 *buttons, float *progress) {
 
 bool spawnUpdateCheckDialog() {
     if (updateCURLTask >= 0) return false;
-    updateCURLTask = -1; //curlTask_DownloadData("https://github.com/PabloMK7/CTGP-7updates/blob/master/updates/changeloglist", &latestVersionString);
+    updateCURLTask = curlTask_DownloadData(URL_UPDATEINFO, &latestVersionString);
     
     MenuDialog* updateDlg;
     
@@ -257,15 +260,6 @@ int main(int argc, char const *argv[]) {
     memset(menuStruct, 0, MENUSTRUCT_SIZE);
     currMenuPtr = &menuMain__Ptr;
 
-    C2D_TextBuf textBuf1 = C2D_TextBufNew(32);
-    C2D_Text textStr1;
-    C2D_TextParse(&textStr1, textBuf1, "SmileBASIC-CYX");
-    C2D_TextOptimize(&textStr1);
-
-    C2D_Text handText;
-    C2D_TextParse(&handText, textBuf1, "");
-    C2D_TextOptimize(&handText);
-
     for (u32 i = 0; i < C2D_SpriteSheetCount(menuDialogSheet); i++){
         C3D_TexSetFilter(
             C2D_SpriteSheetGetImage(menuDialogSheet, i).tex,
@@ -279,13 +273,7 @@ int main(int argc, char const *argv[]) {
         hidRead();
         if (HID_BTNPRESSED & KEY_START) menuAskExit();
         
-        if (HID_BTNPRESSED & KEY_SELECT) {
-            menuNext(0);
-            runPlugin = true;
-            bootTitle = 0x00040000001A1C00; // EUR
-        }
-
-        HID_BTNPRESSED &= ~(KEY_SELECT | KEY_START);
+        HID_BTNPRESSED &= ~(KEY_START);
 
         if (HID_BTNPRESSED & KEY_Y)
             menuNext(1);
@@ -335,26 +323,6 @@ int main(int argc, char const *argv[]) {
         C2D_SceneBegin(topScr);
         C2D_DrawRectangle(0, 0, 0, 400, 240, c1, c2, c3, c4);
         
-        C2D_DrawText(&textStr1, C2D_AlignCenter|C2D_AtBaseline|C2D_WithColor, 198, 125, 0, 1, 1, 255<<24);
-        C2D_DrawText(&textStr1, C2D_AlignCenter|C2D_AtBaseline|C2D_WithColor, 202, 125, 0, 1, 1, 255<<24);
-        C2D_DrawText(&textStr1, C2D_AlignCenter|C2D_AtBaseline|C2D_WithColor, 200, 123, 0, 1, 1, 255<<24);
-        C2D_DrawText(&textStr1, C2D_AlignCenter|C2D_AtBaseline|C2D_WithColor, 200, 127, 0, 1, 1, 255<<24);
-        
-        C2D_DrawText(&textStr1, C2D_AlignCenter|C2D_AtBaseline|C2D_WithColor, 198.5, 123.5, 0, 1, 1, 255<<24);
-        C2D_DrawText(&textStr1, C2D_AlignCenter|C2D_AtBaseline|C2D_WithColor, 201.5, 123.5, 0, 1, 1, 255<<24);
-        C2D_DrawText(&textStr1, C2D_AlignCenter|C2D_AtBaseline|C2D_WithColor, 198.5, 126.5, 0, 1, 1, 255<<24);
-        C2D_DrawText(&textStr1, C2D_AlignCenter|C2D_AtBaseline|C2D_WithColor, 201.5, 126.5, 0, 1, 1, 255<<24);
-        
-        C2D_DrawText(
-            &textStr1, C2D_AlignCenter|C2D_AtBaseline|C2D_WithColor, 200, 125, 0, 1, 1,
-            C2D_Color32f(
-                .6 + sin(C3D_AngleFromDegrees((mainCnt +   0) % 360)) * .4,
-                .6 + sin(C3D_AngleFromDegrees((mainCnt + 120) % 360)) * .4,
-                .6 + sin(C3D_AngleFromDegrees((mainCnt + 240) % 360)) * .4,
-                1
-            )
-        );
-        
         if (menuStructMode && currMenuPtr->Render)
             currMenuPtr->Render(GFX_TOP);
         
@@ -373,10 +341,6 @@ int main(int argc, char const *argv[]) {
             menuDialog__Render(currDialog, GFX_BOTTOM);
 
         C2D_DrawRectSolid(0, 0, 0, 320, 240, C2D_Color32f(0, 0, 0, screenFadeAlpha));
-        
-        if (HID_TOUCHTIME)
-            C2D_DrawText(&handText, C2D_WithColor, HID_TOUCH.px - 8, HID_TOUCH.py - 6, 0, .7, .7, 0xFF00C040);
-
         C3D_FrameEnd(0);
 
         mainCnt++;
@@ -418,7 +382,7 @@ int main(int argc, char const *argv[]) {
                     runPlugin = false;
                     drawError(NULL, true, KEY_A);
                 } else {
-                    drawError("Save data successfully formatted!", true, KEY_A);
+                    drawError("Save data successfully formatted!", true, 0);
                     Sleep(1);
                 }
             } else

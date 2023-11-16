@@ -45,6 +45,12 @@ extern bool     blockHOME;  // Block HOME when error is shown
 extern C3D_RenderTarget    *topScr;     // Top screen render target
 extern C3D_RenderTarget    *botScr;     // Bottom screen render target
 
+enum GameRegion {
+    GAMEREG_JPN = 0,
+    GAMEREG_USA,
+    GAMEREG_EUR
+};
+
 int menuDefault__Act(void);
 
 /**
@@ -87,6 +93,6 @@ void customBreak(u32 r0, u32 r1, u32 r2);
 
 #define GITHUB_REPO     "CyberYoshi64/SB3CYX-Updates" // GitHub repo in which updates are hosted
 
-#define URL_UPDATEINFO  "https://raw.githubusercontent.com/" GITHUB_REPO "/master/updates/changeloglist"    // Changelog data; can use to check latest version as well
-#define URL_UPDATEDATA  "https://github.com/" GITHUB_REPO "/releases/download/v%s/filelist.txt"             // Update file lists
-#define URL_LATESTVER   "https://raw.githubusercontent.com/" GITHUB_REPO "/master/updates/latestVer"        // Update file lists
+#define URL_UPDATEINFO  "https://raw.githubusercontent.com/" GITHUB_REPO "/main/updates/changelog.md"     // Changelog data; can use to check latest version as well
+#define URL_UPDATEDATA  "https://github.com/" GITHUB_REPO "/releases/download/v%s/filelist.txt"           // Update file lists
+#define URL_LATESTVER   "https://raw.githubusercontent.com/" GITHUB_REPO "/main/updates/latestver.txt"    // Latest version shorthand
