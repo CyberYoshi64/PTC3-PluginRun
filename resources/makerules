@@ -1,0 +1,297 @@
+# - NAME: Project name
+# - PROCESS_NAME: Process name (CIA)
+# - INCLUDE_DIRS: Directories containing include headers.
+# - SOURCE_DIRS: Directories containing source files to compile.
+# - BUILD_DIR: Directory to store build files in.
+# - OUTPUT_DIR: Directory to output the final results to.
+# - LIBRARY_DIRS: Optional; Directories containing libraries to compile against.
+# - LIBRARIES: Optional; Libraries to compile against.
+# - EXTRA_OUTPUT_FILES: Optional; Extra files to copy to the output directory.
+# - BUILD_FLAGS: Optional; Shared build flags.
+# - BUILD_FLAGS_CC: Optional; C build flags.
+# - BUILD_FLAGS_CXX: Optional; C++ build flags.
+# - VERSION_MAJOR: Optional; Major version number.
+#     - Default value: 0
+# - VERSION_MINOR: Optional; Minor version number.
+#     - Default value: 0
+# - VERSION_MICRO: Optional; Micro version number.
+#     - Default value: 0
+# - PRODUCT_CODE: CIA/3DS product code.
+# - UNIQUE_ID: CIA/3DS unique ID.
+# - BANNER_AUDIO: Audio file to use in the CIA/3DS banner.
+#     - Supported file types: WAV, CWAV
+# - BANNER_IMAGE: Graphics to use in the CIA/3DS banner.
+#     - Supported file types: 256x128 PNG, CGFX
+# - USE_ON_SD: Optional; Whether the CIA/3DS should be installed to the SD card.
+#     - Supported values: true, false
+#     - Default value: true
+# - MEMORY_TYPE: Optional; CIA/3DS application memory layout.
+#     - Supported values: Application, System, Base
+#     - Default value: Application
+# - SYSTEM_MODE: Optional; CIA/3DS legacy system mode.
+#     - Supported values: 32MB, 64MB, 72MB, 80MB, 96MB
+#     - Default value: 64MB
+# - SYSTEM_MODE_EXT: Optional; CIA/3DS extended system mode.
+#     - Supported values: Legacy, 124MB, 178MB
+#     - Default value: Legacy
+# - CPU_MODE: Optional; CIA/3DS CPU frequency. 804MHz is N3DS-only.
+#     - Supported values: 268MHz, 804MHz
+#     - Default value: 268MHz
+# - ENABLE_L2_CACHE: Optional; Whether the CIA/3DS should use the N3DS L2 cache.
+#     - Supported values: true, false
+#     - Default value: false
+# - ROMFS_DIR: Optional; Directory containing RomFS files.
+# - LOGO: Optional; Logo animation to use when launching the CIA/3DS.
+#     - Supported file types: BCMA.LZ
+#
+# PROLOGUE #
+
+.PHONY: all bootstrap clean
+
+all: bootstrap
+
+bootstrap:
+	@[ -d $(BUILD_DIR) ] || mkdir -p $(BUILD_DIR)
+	@[ -d $(OUTPUT_DIR) ] || mkdir -p $(OUTPUT_DIR)
+
+ifeq ($(strip $(DEVKITPRO)),)
+	$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPro")
+endif
+
+define createdirrule
+$(1): | $(dir $(1))
+
+ifndef $(dir $(1))_DIRECTORY_RULE_IS_DEFINED
+$(dir $(1)):
+	@mkdir -p $$@
+
+$(dir $(1))_DIRECTORY_RULE_IS_DEFINED := 1
+endif
+endef
+
+rwildcard=$(wildcard $1/$2) $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2))
+
+
+BUILT_FILTER := $(patsubst %.bin,$(BUILD_DIR)/%.bin.o,$(BUILD_FILTER)) \
+		$(patsubst %.c,$(BUILD_DIR)/%.o,$(BUILD_FILTER)) \
+		$(patsubst %.cpp,$(BUILD_DIR)/%.o,$(BUILD_FILTER)) \
+		$(patsubst %.s,$(BUILD_DIR)/%.o,$(BUILD_FILTER))
+
+OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
+			$(patsubst %.bin,$(BUILD_DIR)/%.bin.o,$(call rwildcard,$(dir),*.bin)) \
+			$(patsubst %.c,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.c)) \
+			$(patsubst %.cpp,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.cpp)) \
+			$(patsubst %.s,$(BUILD_DIR)/%.o,$(call rwildcard,$(dir),*.s)) \
+		)
+
+OBJECT_FILES := $(filter-out $(BUILT_FILTER),$(OBJECT_FILES))
+
+ifeq ($(strip $(VERSION_MAJOR)),)
+	VERSION_MAJOR := 0
+endif
+
+ifeq ($(strip $(VERSION_MINOR)),)
+	VERSION_MINOR := 0
+endif
+
+ifeq ($(strip $(VERSION_MICRO)),)
+	VERSION_MICRO := 0
+endif
+
+LD_FLAGS := $(patsubst %,-L%/lib,$(LIBRARY_DIRS)) $(patsubst %,-l%,$(LIBRARIES))
+COMMON_CC_FLAGS := $(sort $(foreach dir,$(SOURCE_DIRS),$(patsubst %,-I$(BUILD_DIR)/%,$(dir $(call rwildcard,$(dir),*))))) $(patsubst %,-I%,$(INCLUDE_DIRS)) $(patsubst %,-I%/include,$(LIBRARY_DIRS)) -g -Wall -DVERSION_MAJOR=$(VERSION_MAJOR) -DVERSION_MINOR=$(VERSION_MINOR) -DVERSION_MICRO=$(VERSION_MICRO) $(BUILD_FLAGS)
+COMMON_CXX_FLAGS :=
+
+ifeq ($(findstring -O,$(BUILD_FLAGS)),)
+	COMMON_CC_FLAGS += -O2
+endif
+
+BUILT_FILTER := $(patsubst %.v.pica,$(BUILD_DIR)/%.shbin.o,$(BUILD_FILTER)) \
+	$(patsubst %.shlist,$(BUILD_DIR)/%.shbin.o,$(BUILD_FILTER)) \
+
+OBJECT_FILES := $(foreach dir,$(SOURCE_DIRS), \
+		$(patsubst %.v.pica,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.v.pica)) \
+		$(patsubst %.shlist,$(BUILD_DIR)/%.shbin.o,$(call rwildcard,$(dir),*.shlist)) \
+	) $(OBJECT_FILES)
+
+OBJECT_FILES := $(filter-out $(BUILT_FILTER),$(OBJECT_FILES))
+
+DEVKITARM := $(DEVKITPRO)/devkitARM
+
+AR := $(DEVKITARM)/bin/arm-none-eabi-ar
+AS := $(DEVKITARM)/bin/arm-none-eabi-as
+CC := $(DEVKITARM)/bin/arm-none-eabi-gcc
+CXX := $(DEVKITARM)/bin/arm-none-eabi-g++
+NM := $(DEVKITARM)/bin/arm-none-eabi-nm
+
+OUTPUT_FILES := $(OUTPUT_DIR)/$(NAME).elf $(OUTPUT_DIR)/$(NAME).3dsx $(OUTPUT_DIR)/$(NAME).cia $(OUTPUT_DIR)/$(NAME).cci
+
+LD_FLAGS += -specs=3dsx.specs
+COMMON_CC_FLAGS += -mword-relocations -ffast-math -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -D__3DS__
+
+NAME ?= App
+PROCESS_NAME ?= $(NAME)
+RSF ?= main.rsf
+CATEGORY ?= Application
+USE_ON_SD ?= true
+MEMORY_TYPE ?= Application
+SYSTEM_MODE ?= 64MB
+SYSTEM_MODE_EXT ?= Legacy
+CPU_SPEED ?= 268MHz
+ENABLE_L2_CACHE ?= false
+
+_3DSXTOOL_FLAGS :=
+COMMON_MAKEROM_FLAGS := -rsf $(RSF) -target t -exefslogo -icon $(ICON) -banner $(BUILD_DIR)/banner.bnr -major $(VERSION_MAJOR) -minor $(VERSION_MINOR) -micro $(VERSION_MICRO) -DAPP_TITLE="$(PROCESS_NAME)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)" -DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)" -DAPP_CATEGORY="$(CATEGORY)" -DAPP_USE_ON_SD="$(USE_ON_SD)" -DAPP_MEMORY_TYPE="$(MEMORY_TYPE)" -DAPP_CPU_SPEED="$(CPU_SPEED)" -DAPP_ENABLE_L2_CACHE="$(ENABLE_L2_CACHE)" -DAPP_VERSION_MAJOR="$(VERSION_MAJOR)"
+SECOND_MAKEROM_FLAGS := -major $(VERSION_MAJOR) -minor $(VERSION_MINOR) -micro $(VERSION_MICRO)
+MANUAL_MAKECFA :=
+
+ifneq ("$(wildcard $(ROMFS_DIR))","")
+	_3DSXTOOL_FLAGS += --romfs=$(ROMFS_DIR)
+	COMMON_MAKEROM_FLAGS += -DAPP_ROMFS="$(ROMFS_DIR)"
+endif
+
+ifneq ("$(wildcard $(LOGO))","")
+	COMMON_MAKEROM_FLAGS += -logo "$(LOGO)"
+endif
+
+ifeq ($(suffix $(BANNER_IMAGE)),.cgfx)
+	BANNER_IMAGE_ARG := -ci
+else
+	BANNER_IMAGE_ARG := -i
+endif
+
+ifeq ($(suffix $(BANNER_AUDIO)),.bcwav)
+	BANNER_AUDIO_ARG := -ca
+else
+	BANNER_AUDIO_ARG := -a
+endif
+
+ifneq ("$(MANUAL_RSF)","")
+	SECOND_MAKEROM_FLAGS += -i $(BUILD_DIR)/manual.cfa:1:1
+	MANUAL_MAKECFA := makerom -f cfa -o $(BUILD_DIR)/manual.cfa -rsf $(MANUAL_RSF) -DAPP_UNIQUE_ID="$(UNIQUE_ID)"
+endif
+
+CLANG_CC := $(subst gcc,clang,$(CC))
+CLANG_CC_EXISTS := $(shell which $(CLANG_CC) > /dev/null 2> /dev/null; echo $$?)
+ifeq ($(CLANG_CC_EXISTS),0)
+	CC := $(CLANG_CC)
+endif
+
+CLANG_CXX := $(subst g++,clang++,$(CXX))
+CLANG_CXX_EXISTS := $(shell which $(CLANG_CXX) > /dev/null 2> /dev/null; echo $$?)
+ifeq ($(CLANG_CXX_EXISTS),0)
+	CXX := $(CLANG_CXX)
+endif
+
+CC_FLAGS := $(COMMON_CC_FLAGS) $(BUILD_FLAGS_CC)
+CXX_FLAGS := $(COMMON_CC_FLAGS) $(COMMON_CXX_FLAGS) $(BUILD_FLAGS_CXX)
+
+ifeq ($(findstring -std,$(BUILD_FLAGS_CC)),)
+	CC_FLAGS += -std=gnu11
+endif
+
+ifeq ($(findstring -std,$(BUILD_FLAGS_CXX)),)
+	CXX_FLAGS += -std=gnu++11
+endif
+
+ifneq ($(EXTRA_OUTPUT_FILES),)
+	EXTRA_OUTPUT_COPY_CMD := cp -r $(EXTRA_OUTPUT_FILES) $(OUTPUT_DIR)
+endif
+
+# MAIN RULES #
+
+.PHONY: all clean
+
+all: $(OUTPUT_DIR)/$(NAME).elf $(OUTPUT_DIR)/$(NAME).3dsx $(OUTPUT_DIR)/$(NAME).cia $(OUTPUT_DIR)/$(NAME).cci
+
+$(BUILD_DIR)/%.shbin.o: $(BUILD_DIR)/%.shbin.c
+	@echo $@
+	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d $< -o $@
+
+define shader-as
+	$(eval CURBIN := $(patsubst %.shbin.c,%.shbin,$@))
+	@picasso -o $(CURBIN) $1
+	@cd $(dir $(CURBIN)); \
+	xxd -i $(notdir $(CURBIN)) "$(CURDIR)/$@"
+	echo "extern const u8" `(echo $(notdir $(CURBIN)) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURBIN) | tr . _)`.h
+	echo "extern const u32" `(echo $(notdir $(CURBIN)) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_len";" >> `(echo $(CURBIN) | tr . _)`.h
+endef
+
+$(BUILD_DIR)/%.shbin.c: %.v.pica %.g.pica
+	@echo $@
+	@$(call shader-as,$^)
+
+$(BUILD_DIR)/%.shbin.c: %.v.pica
+	@echo $@
+	@$(call shader-as,$<)
+
+$(BUILD_DIR)/%.shbin.c: %.shlist
+	@echo $@
+	@$(call shader-as,$(foreach file,$(shell cat $<),$(dir $<)/$(file)))
+
+%.bnr: $(BANNER_IMAGE) $(BANNER_AUDIO)
+	@echo $@
+	@bannertool makebanner $(BANNER_IMAGE_ARG) $(BANNER_IMAGE) $(BANNER_AUDIO_ARG) $(BANNER_AUDIO) -o $@ > /dev/null
+
+%.cci: %.cxi
+	@echo $@
+	@makerom -f cci -o $@ -i $<:0:0 $(SECOND_MAKEROM_FLAGS)
+
+%.cia: %.cxi
+	@echo $@
+	@makerom -f cia -o $@ -i $<:0:0 $(SECOND_MAKEROM_FLAGS)
+
+%.3dsx: %.elf $(ICON_3DSX)
+	@echo $@
+	@3dsxtool $< $@ --smdh=$(word 2,$^) $(_3DSXTOOL_FLAGS)
+
+%.cxi: .WAIT %.elf $(BUILD_DIR)/banner.bnr $(ICON)
+	@echo $@
+	@makerom -f cxi -o $@ -elf $< -DAPP_ENCRYPTED=false $(COMMON_MAKEROM_FLAGS)
+	@$(MANUAL_MAKECFA)
+
+%.elf: .WAIT $(OBJECT_FILES)
+	@echo $@
+	@$(CXX) $(CXX_FLAGS) $^ -o $@ $(LD_FLAGS)
+	@$(NM) -CSn $@ > $(OUTPUT_DIR)/$(NAME).lst
+
+$(BUILD_DIR)/%.o: %.c
+	@echo $@
+	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d $< -o $@
+
+$(BUILD_DIR)/%.o: %.cpp
+	@echo $@
+	@$(CXX) -c $(CXX_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d $< -o $@
+
+$(BUILD_DIR)/%.o: %.s
+	@echo $@
+	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d -x assembler-with-cpp $< -o $@
+
+$(BUILD_DIR)/%.o: %.S
+	@echo $@
+	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d -x assembler-with-cpp $< -o $@
+
+$(BUILD_DIR)/%.bin.o: $(BUILD_DIR)/%.bin.c
+	@echo $@
+	@$(CC) -c $(CC_FLAGS) -MMD -MP -MF $(BUILD_DIR)/$*.d $< -o $@
+
+$(BUILD_DIR)/%.bin.c: %.bin
+	@echo $@
+	@cd $(<D); \
+	xxd -i $(<F) "$(CURDIR)/$@"
+	@echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(BUILD_DIR)/$< | tr . _)`.h
+	@echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_len";" >> `(echo $(BUILD_DIR)/$< | tr . _)`.h
+
+$(foreach file,$(OBJECT_FILES),$(eval $(call createdirrule,$(file))))
+$(foreach file,$(OUTPUT_FILES),$(eval $(call createdirrule,$(file))))
+
+# DEPENDS #
+
+DEPENDS	:= $(OBJECT_FILES:.o=.d)
+-include $(DEPENDS)
+
+# CLEAN #
+
+clean:
+	@rm -rf $(BUILD_DIR) $(OUTPUT_DIR)
+	@echo "Cleaned."

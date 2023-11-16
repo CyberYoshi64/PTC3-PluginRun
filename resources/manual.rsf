@@ -1,0 +1,9 @@
+BasicInfo:
+  ContentType             : Manual
+
+RomFs:
+  RootPath                : romfs-manual
+
+TitleInfo:
+  Category                : Manual
+  UniqueId                : $(APP_UNIQUE_ID)
