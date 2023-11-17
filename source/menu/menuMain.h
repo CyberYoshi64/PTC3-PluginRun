@@ -2,7 +2,9 @@
 
 #include <3ds.h>
 #include <citro2d.h>
+#include "main.h"
 #include "menuButton.h"
+#include "menuDialog.h"
 
 typedef struct {
     C2D_TextBuf textbuf;
@@ -26,6 +28,7 @@ typedef struct {
     float       alpha;
 } MenuMain__Struct;
 
+void    menuMain__ButtonBackground(float x, float y, float w, float h, bool disabled);
 void    menuMain__Init(void);
 void    menuMain__Exit(void);
 int     menuMain__Act(void);

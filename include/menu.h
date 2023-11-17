@@ -2,10 +2,10 @@
 
 #include <3ds.h>
 #include "main.h"
+
 #include "menu/menuMain.h"
 #include "menu/menuPlay.h"
-#include "menuDialog.h"
-#include "menuButton.h"
+#include "menu/menuTemplate.h"
 
 typedef enum MenuID {
     MENUID_NONE = 0,
@@ -13,6 +13,7 @@ typedef enum MenuID {
     MENUID_PLAY,
     MENUID_UPDATES,
     MENUID_SETTING_TOP,
+    MENUID_SAVEFS_COPY,
 } MenuID;
 
 enum MenuReactValue {
@@ -37,8 +38,9 @@ typedef struct MenuStructPointers_s {
 typedef struct {
     float       alpha;
     union {
-        MenuMain__Struct    main;
-        MenuPlay__Struct    play;
+        MenuMain__Struct        main;
+        MenuPlay__Struct        play;
+        MenuTemplate__Struct    template;
         u8                  pad[32700];
     };
 } CTR_ALIGN(1024) MenuStruct;
@@ -47,6 +49,7 @@ typedef struct {
 
 extern MenuStructPointers menuMain__Ptr;
 extern MenuStructPointers menuPlay__Ptr;
+extern MenuStructPointers menuTemplate__Ptr;
 extern MenuStruct* menuStruct;
 
 extern MenuStructPointers* currMenuPtr;

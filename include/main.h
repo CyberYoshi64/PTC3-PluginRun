@@ -79,6 +79,8 @@ void customBreak(u32 r0, u32 r1, u32 r2);
 
 #define __ENABLE_PLUGIN_LOADER  true
 
+#define SDMC_PREFIX     "sdmc:"
+
 /// Main mod paths
 
 #define MAIN_PATH       "/PTC3PLG/"                 // Main path of the modpack

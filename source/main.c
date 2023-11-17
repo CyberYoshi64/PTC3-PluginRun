@@ -8,6 +8,8 @@ u64 bootTitle = 0;
 u32 mainCnt = 0, frameCnt;
 float screenFadeAlpha = 1;
 
+u64 __appID;
+
 C3D_RenderTarget    *topScr;
 C3D_RenderTarget    *botScr;
 
@@ -86,6 +88,10 @@ int menuNext(MenuID id) {
 }
 
 void menuDialogShow(MenuDialog* dlg) {
+    if (!dlg) return;
+    if (nextDialog) return;
+    dlg->state = 0;
+    dlg->rc = 0;
     nextDialog = dlg;
 }
 
@@ -120,16 +126,16 @@ void drawError(const char* error, bool standalone, u32 waitButton){
 }
 
 bool updateDlgWaitCallback(u32 *buttons, float *progress) {
-    if (curlTask_GetCurrentTask() == updateCURLTask) {
+    if (appTask_GetCurrentTask() == updateCURLTask) {
         curlGetDownloadState(NULL, NULL, progress);
     }
-    if (curlTask_IsDone(updateCURLTask)) {
+    if (appTask_IsDone(updateCURLTask)) {
         *progress = 1.0f;
-        if (curlTask_GetResult(updateCURLTask)) {
+        if (appTask_GetResult(updateCURLTask)) {
             MenuDialog* s = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE);
             if (s) {
                 char title[32];
-                sprintf(title, "Error code %d", curlTask_GetResult(updateCURLTask));
+                sprintf(title, "Error code %d", appTask_GetResult(updateCURLTask));
                 menuDialogTitle(s, title);
                 menuDialogMessage(s, "Could not check for the latest version.\n\nCURL returned error: ");
                 menuDialogMessageAppend(s, CURL_lastErrorCode);
@@ -141,7 +147,7 @@ bool updateDlgWaitCallback(u32 *buttons, float *progress) {
             strncpy(latestVersion, latestVersionString, sizeof(latestVersion)-1);
             free(latestVersionString);
         }
-        curlTask_Clear(updateCURLTask);
+        appTask_Clear(updateCURLTask);
         updateCURLTask = -1;
         return true;
     }
@@ -150,7 +156,7 @@ bool updateDlgWaitCallback(u32 *buttons, float *progress) {
 
 bool spawnUpdateCheckDialog() {
     if (updateCURLTask >= 0) return false;
-    updateCURLTask = curlTask_DownloadData(URL_UPDATEINFO, &latestVersionString);
+    updateCURLTask = appTask_DownloadData(URL_UPDATEINFO, &latestVersionString);
     
     MenuDialog* updateDlg;
     
@@ -197,10 +203,13 @@ void menuAskExit() {
 int main(int argc, char const *argv[]) {
     Result res; bool fail = false;
     
+    APT_GetProgramID(&__appID);
+
     gfxInit(GSP_RGB565_OES, GSP_RGB565_OES, false);
     romfsMountSelf("rom");
     ndspInit();
     httpcInit(0x1000);
+    isCitra = checkCitra();
     C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
     C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
     C2D_Prepare();
@@ -230,9 +239,21 @@ int main(int argc, char const *argv[]) {
         );
         fail = true;
     }
-    if (R_FAILED(res = curlInit())) {
+    if (R_FAILED(res = archMount(ARCHIVE_SDMC, 0, 0, "sdmc", 0))) {
         sprintf(errorTextData + strlen(errorTextData),
-            "curlInit() → %ld\n", res
+            "archMount()[sdmc] → 0x%08lX\n", res
+        );
+        fail = true;
+    }
+    if (R_FAILED(res = archMount(ARCHIVE_ROMFS, 0, 0, "romfs", 0))) {
+        sprintf(errorTextData + strlen(errorTextData),
+            "archMount()[romfs] → 0x%08lX\n", res
+        );
+        fail = true;
+    }
+    if (R_FAILED(res = appTaskInit())) {
+        sprintf(errorTextData + strlen(errorTextData),
+            "appTaskInit() → %ld\n", res
         );
         fail = true;
     }
@@ -256,7 +277,6 @@ int main(int argc, char const *argv[]) {
 
     osSetSpeedupEnable(true);
     //MenuSound::Init();
-    isCitra = checkCitra();
     memset(menuStruct, 0, MENUSTRUCT_SIZE);
     currMenuPtr = &menuMain__Ptr;
 
@@ -364,58 +384,10 @@ int main(int argc, char const *argv[]) {
             C2D_DrawRectSolid(0, 0, 0, 320, 240, C2D_Color32f(0, 0, 0, screenFadeAlpha));
             C3D_FrameEnd(0);
         }
-
-        if (runPlugin) {
-            if (R_FAILED(archMount(ARCHIVE_USER_SAVEDATA, MEDIATYPE_SD, bootTitle, "save", 0))){
-                drawError("Formatting save data...", true, 0);
-                Result res = formatSave(bootTitle, MEDIATYPE_SD, 10, 5, true);
-                if (R_FAILED(res)){
-                    sprintf(
-                        errorTextData,
-                        "An error has occured while formatting the save data:\n\n"
-                        "Result code: 0x%08lX\n\n"
-                        "The plugin cannot be launched.\n"
-                        "Please start SmileBASIC manually to create the save data.\n\n"
-                        "Press \uE000 to continue and exit the application.",
-                        res
-                    );
-                    runPlugin = false;
-                    drawError(NULL, true, KEY_A);
-                } else {
-                    drawError("Save data successfully formatted!", true, 0);
-                    Sleep(1);
-                }
-            } else
-                archUnmount("save");
-
-            if (R_FAILED(archMount(ARCHIVE_EXTDATA, MEDIATYPE_SD, (bootTitle>>8) & 0xFFFFF, "data", 0))){
-                drawError("Formatting ext save data...", true, 0);
-                Result res = formatExtData(bootTitle, MEDIATYPE_SD, 8196, 1026);
-                if (R_FAILED(res)){
-                    sprintf(
-                        errorTextData,
-                        "An error has occured while formatting the ext save data:\n\n"
-                        "Result code: 0x%08lX\n\n"
-                        "The plugin cannot be launched.\n"
-                        "Please start SmileBASIC manually to create the save data.\n\n"
-                        "Press \uE000 to continue and exit the application.",
-                        res
-                    );
-                    runPlugin = false;
-                    drawError(NULL, true, KEY_A);
-                } else {
-                    drawError("Ext save data successfully formatted!", true, 0);
-                    Sleep(1);
-                }
-            } else
-                archUnmount("data");
-            drawError("Preparing...", true, 0);
-            Sleep(1);
-        }
     }
 
     if (menuDialogSheet) C2D_SpriteSheetFree(menuDialogSheet);
-    curlExit();
+    appTaskExit();
     httpcExit();
     ndspExit();
     romfsUnmount("rom");

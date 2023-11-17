@@ -2,7 +2,9 @@
 
 #include <3ds.h>
 #include <citro2d.h>
+#include "main.h"
 #include "menuButton.h"
+#include "menuDialog.h"
 
 typedef struct {
     C2D_TextBuf textbuf;
@@ -13,6 +15,12 @@ typedef struct {
         float       sx;
         float       sy;
     } header;
+
+    MenuDialog* badSaveDialog;
+    MenuDialog* outdatedGameDialog;
+    MenuDialog* prepareGameDialog;
+    MenuDialog* cyxSaveRootSetupDialog;
+    
     u32 buttonLabelFG;
     u32 buttonLabelBG;
     

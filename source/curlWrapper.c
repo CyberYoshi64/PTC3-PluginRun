@@ -5,34 +5,34 @@
 #define APP_USERAGENT   "Mozilla/5.0 (Nintendo 3DS; U; ; en) AppleWebKit/536.30 (KHTML, like Gecko) CTGP-7/1.0"
 #define FILE_ALLOC_SIZE 0x20000
 
-static Thread curlThread;
-static CURLTask *curl_tasks = NULL;
-static vu32 curl_tasks_current = 0;
-static vu64 curl_tasks_mask = 0;
-static vu32 curl_tasks_pause = 0;
-static vu32 curl_tasks_pausedOn = 0;
+static Thread taskThread;
+static AppTask *app_tasks = NULL;
+static vu32 app_tasks_current = 0;
+static vu64 app_tasks_mask = 0;
+static vu32 app_tasks_pause = 0;
+static vu32 app_tasks_pausedOn = 0;
 u64 curl_progress_dltotal = 0;
 u64 curl_progress_dlnow = 0;
 u64 curl_progress_ultotal = 0;
 u64 curl_progress_ulnow = 0;
 
-int curlInit() {
-    curl_tasks = malloc(CURLTASK_STRUCTSIZE);
-    if (!curl_tasks) {
+int appTaskInit() {
+    app_tasks = malloc(APPTASK_STRUCTSIZE);
+    if (!app_tasks) {
         drawError("cURL could not be initialized.\n\nPress any key to continue.", true, KEY_ABXYSS);
     } else
-        curlThread = threadCreate(curlTaskThread, NULL, 0x400000, 0x18, -1, false);
+        taskThread = threadCreate(appTaskThread, NULL, 0x400000, 0x18, -1, false);
     return curl_global_init(CURL_GLOBAL_ALL);
 }
 
-void curlExit() {
-    if (curl_tasks) free(curl_tasks);
-    if (curlThread) {
-        threadJoin(curlThread, U64_MAX);
-        threadFree(curlThread);
-        curlThread = 0;
+void appTaskExit() {
+    if (app_tasks) free(app_tasks);
+    if (taskThread) {
+        threadJoin(taskThread, U64_MAX);
+        threadFree(taskThread);
+        taskThread = 0;
     }
-    curl_tasks = NULL;
+    app_tasks = NULL;
     curl_global_cleanup();
 }
 
@@ -355,111 +355,157 @@ exit:
 	return retcode;
 }
 
-int curlTask__GetVacant() {
-    if (!curl_tasks) return -1;
-    for (u32 i = 0; i < CURLTASKS_MAX; i++) {
-        if (curl_tasks[i].type == CURLTASK_VACANT) return i;
+int appTask__GetVacant() {
+    if (!app_tasks) return -1;
+    for (u32 i = 0; i < APPTASKS_MAX; i++) {
+        if (app_tasks[i].type == APPTASK_VACANT) return i;
     }
     return -1;
 }
 
-int curlTask_DownloadData(const char* url, char** out) {
-    int taskIndex = curlTask__GetVacant();
+int appTask_DownloadData(const char* url, char** out) {
+    int taskIndex = appTask__GetVacant();
     if (taskIndex < 0) return taskIndex;
-    CURLTask* task = curl_tasks + taskIndex;
+    AppTask* task = app_tasks + taskIndex;
 	strncpy(task->url, url, 255);
     task->data.downData = out;
     task->done = 0;
-    task->type = CURLTASK_DOWN_RAW;
-	curl_tasks_mask |= BIT(taskIndex);
-	curl_tasks_pause = 0;
+    task->type = APPTASK_DOWN_RAW;
+	app_tasks_mask |= BIT(taskIndex);
+	app_tasks_pause = 0;
     return taskIndex;
 }
-int curlTask_DownloadFile(const char* url, Handle fd) {
-    int taskIndex = curlTask__GetVacant();
+
+int appTask_DownloadFile(const char* url, Handle fd) {
+    int taskIndex = appTask__GetVacant();
     if (taskIndex < 0) return taskIndex;
-    CURLTask* task = curl_tasks + taskIndex;
+    AppTask* task = app_tasks + taskIndex;
 	strncpy(task->url, url, 255);
     task->data.file = fd;
     task->done = 0;
-    task->type = CURLTASK_DOWN_FILE;
-	curl_tasks_mask |= BIT(taskIndex);
-	curl_tasks_pause = 0;
+    task->type = APPTASK_DOWN_FILE;
+	app_tasks_mask |= BIT(taskIndex);
+	app_tasks_pause = 0;
     return taskIndex;
 }
-int curlTask_GetResult(u32 index) {
-    if (!curl_tasks) return -1;
-    if (index >= CURLTASKS_MAX) return -2;
-    CURLTask* task = curl_tasks + index;
+
+int appTask_FormatSave(u64 titleID, FS_MediaType mediaType, u32 files, u32 dirs, bool dupData) {
+	int taskIndex = appTask__GetVacant();
+	if (taskIndex < 0) return taskIndex;
+	AppTask *task = app_tasks + taskIndex;
+	task->data.format.titleID = titleID;
+	task->data.format.mediaType = mediaType;
+	task->data.format.files = files;
+	task->data.format.dirs = dirs;
+	task->data.format.dupData = dupData;
+	task->done = 0;
+	task->type = APPTASK_FORMAT_SAVE;
+	app_tasks_mask |= BIT(taskIndex);
+	app_tasks_pause = 0;
+	return taskIndex;
+}
+
+int appTask_FormatExtData(u64 titleID, FS_MediaType mediaType, u32 files, u32 dirs) {
+	int taskIndex = appTask__GetVacant();
+	if (taskIndex < 0) return taskIndex;
+	AppTask *task = app_tasks + taskIndex;
+	task->data.format.titleID = titleID;
+	task->data.format.mediaType = mediaType;
+	task->data.format.files = files;
+	task->data.format.dirs = dirs;
+	task->done = 0;
+	task->type = APPTASK_FORMAT_EXTDATA;
+	app_tasks_mask |= BIT(taskIndex);
+	app_tasks_pause = 0;
+	return taskIndex;
+}
+
+int appTask_GetResult(u32 index) {
+    if (!app_tasks) return -1;
+    if (index >= APPTASKS_MAX) return -2;
+    AppTask* task = app_tasks + index;
     if (!task->done) return -3;
     return task->rc;
 }
-int curlTask_IsDone(u32 index) {
-    if (!curl_tasks) return 0;
-    if (index >= CURLTASKS_MAX) return 0;
-    CURLTask* task = curl_tasks + index;
+int appTask_IsDone(u32 index) {
+    if (!app_tasks) return 0;
+    if (index >= APPTASKS_MAX) return 0;
+    AppTask* task = app_tasks + index;
     if (task->done) return 1;
     return 0;
 }
-u32 curlTask_IsWaiting() {
-    return curl_tasks_pause;
+
+u32 appTask_IsWaiting() {
+    return app_tasks_pause;
 }
-u32 curlTask_PausedOn() {
-	return curl_tasks_pausedOn;
+
+u32 appTask_PausedOn() {
+	return app_tasks_pausedOn;
 }
-void curlTask_Continue() {
-    curl_tasks_pause = 0;
+
+void appTask_Continue() {
+    app_tasks_pause = 0;
 }
-u32 curlTask_GetCurrentTask() {
-    return curl_tasks_current;
+
+u32 appTask_GetCurrentTask() {
+    return app_tasks_current;
 }
-int curlTask_Clear(u32 index) {
-    if (!curl_tasks) return -1;
-    if (index >= CURLTASKS_MAX) return -2;
-    CURLTask* task = curl_tasks + index;
+
+int appTask_Clear(u32 index) {
+    if (!app_tasks) return -1;
+    if (index >= APPTASKS_MAX) return -2;
+    AppTask* task = app_tasks + index;
     if (!task->type) return 0;
     if (!task->done) return -3;
-    task->type = CURLTASK_VACANT;
+    task->type = APPTASK_VACANT;
     return task->rc;
 }
 
-void curlTaskThread(void* arg) {
-    if (!curl_tasks) threadExit(1);
-    CURLTask* currentTask = curl_tasks;
+void appTaskThread(void* arg) {
+    if (!app_tasks) threadExit(1);
+    AppTask* currentTask = app_tasks;
     
     while (!exiting) {
-        if (!curl_tasks_pause) {
-            curl_tasks_pausedOn = -1U;
+        if (!app_tasks_pause) {
+            app_tasks_pausedOn = -1U;
 			if (!currentTask->done) {
                 switch (currentTask->type) {
-                    case CURLTASK_DOWN_FILE:
+                    case APPTASK_DOWN_FILE:
                         currentTask->rc =
                             downloadFile(currentTask->url, currentTask->data.file);
                         break;
-                    case CURLTASK_DOWN_RAW:
+                    case APPTASK_DOWN_RAW:
                         currentTask->rc =
                             downloadString(currentTask->url, currentTask->data.downData);
+                        break;
+                    case APPTASK_FORMAT_SAVE:
+                        currentTask->rc =
+                            formatSave(currentTask->data.format.titleID, currentTask->data.format.mediaType, currentTask->data.format.files, currentTask->data.format.dirs, currentTask->data.format.dupData);
+                        break;
+                    case APPTASK_FORMAT_EXTDATA:
+                        currentTask->rc =
+                            formatExtData(currentTask->data.format.titleID, currentTask->data.format.mediaType, currentTask->data.format.files, currentTask->data.format.dirs);
                         break;
 					default:
 						break;
                 }
 				if (currentTask->rc) {
-					curl_tasks_pause = 2;
-					curl_tasks_pausedOn = curl_tasks_current;
+					app_tasks_pause = 2;
+					app_tasks_pausedOn = app_tasks_current;
 				}
                 currentTask->done = 1;
             }
 			if (currentTask->type && !currentTask->done)
-				curl_tasks_mask |= BIT(curl_tasks_current);
-            curl_tasks_current++; currentTask++;
-            if (curl_tasks_current >= CURLTASKS_MAX) {
-                curl_tasks_current = 0;
-				if (!curl_tasks_mask && !curl_tasks_pause) curl_tasks_pause = 1;
-				curl_tasks_mask = 0;
-                currentTask = curl_tasks;
+				app_tasks_mask |= BIT(app_tasks_current);
+            app_tasks_current++; currentTask++;
+            if (app_tasks_current >= APPTASKS_MAX) {
+                app_tasks_current = 0;
+				if (!app_tasks_mask && !app_tasks_pause) app_tasks_pause = 1;
+				app_tasks_mask = 0;
+                currentTask = app_tasks;
             }
         }
-        Sleep(.01);
+        Sleep(.01666f);
     }
     threadExit(0);
 }

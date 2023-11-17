@@ -2,20 +2,18 @@
 
 // https://github.com/ihaveamac/save-data-copy-tool/blob/main/source/main.c#L138-L150
 u32 saveDataGetBuckets(u32 count) {
-	if (count < 20) {
+	if (count < 20)
 		return (count < 4) ? 3 : count | 1;
-	}
 
 	for (u32 i = 0; i < 100; ++i) {
 		u32 ret = count + i;
-		if (ret & 1 && ret % 3 && ret % 5 && ret % 7 && ret % 11 && ret % 13 && ret % 17) {
+		if (ret & 1 && ret % 3 && ret % 5 && ret % 7 && ret % 11 && ret % 13 && ret % 17)
 			return ret;
-		}
 	}
 	return count | 1;
 }
 
-Result formatSave(u64 titleID, FS_MediaType mt, u32 files, u32 directories, bool duplicateData){
+Result formatSave(u64 titleID, FS_MediaType mt, u32 files, u32 directories, bool duplicateData) {
     return FSUSER_FormatSaveData(
         ARCHIVE_USER_SAVEDATA,
         (FS_Path){PATH_BINARY, 12, (u32[]){mt, titleID, (titleID>>32)}},

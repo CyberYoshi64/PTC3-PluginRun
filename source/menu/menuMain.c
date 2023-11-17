@@ -4,23 +4,30 @@
 #define ALPHA menuStruct->alpha
 MenuStructPointers menuMain__Ptr = {menuMain__Init, menuMain__Exit, menuMain__Act, menuMain__Render, menuMain__AnimIn, menuMain__AnimOut};
 
-void menuMain__ButtonBackground(float x, float y, float w, float h) {
-    C2D_DrawRectangle(
-        x, y, 0, w, h,
-        0xFF281810&STRUCT.buttonLabelFG, 0xFF201808&STRUCT.buttonLabelFG,
-        0xFF100800&STRUCT.buttonLabelFG, 0xFF100800&STRUCT.buttonLabelFG
-    );
+void menuMain__ButtonBackground(float x, float y, float w, float h, bool disabled) {
+    if (!disabled)
+        C2D_DrawRectangle(
+            x, y, 0, w, h,
+            0x281810|(C2D_FloatToU8(ALPHA)<<24), 0x201808|(C2D_FloatToU8(ALPHA)<<24),
+            0x100800|(C2D_FloatToU8(ALPHA)<<24), 0x100800|(C2D_FloatToU8(ALPHA)<<24)
+        );
+    else
+        C2D_DrawRectangle(
+            x, y, 0, w, h,
+            0x281810|(C2D_FloatToU8(ALPHA/2)<<24), 0x201808|(C2D_FloatToU8(ALPHA/2)<<24),
+            0x100800|(C2D_FloatToU8(ALPHA/2)<<24), 0x100800|(C2D_FloatToU8(ALPHA/2)<<24)
+        );
 }
 
 void menuMain__PlayBtnRender(float x, float y, float w, float h, bool selected, bool touched, bool disabled) {
-    menuMain__ButtonBackground(x, y, w, h);
+    menuMain__ButtonBackground(x, y, w, h, disabled);
     C2D_DrawTriangle(x + 12, y + 8, STRUCT.buttonLabelFG, x + 12, y + h - 8, STRUCT.buttonLabelFG, x + h * .75 + 4, y + h / 2 , STRUCT.buttonLabelFG, 0);
     C2D_DrawText(&STRUCT.playText, C2D_AlignCenter|C2D_WithColor|C2D_AtBaseline, x + (w + (h * .5 + 8)) / 2, y + (h + 10) / 2 + 2.5f, 0, .7, .7, STRUCT.buttonLabelBG);
     C2D_DrawText(&STRUCT.playText, C2D_AlignCenter|C2D_WithColor|C2D_AtBaseline, x + (w + (h * .5 + 8)) / 2, y + (h + 10) / 2, 0, .7, .7, STRUCT.buttonLabelFG);
 }
 
 void menuMain__UpdateBtnRender(float x, float y, float w, float h, bool selected, bool touched, bool disabled) {
-    menuMain__ButtonBackground(x, y, w, h);
+    menuMain__ButtonBackground(x, y, w, h, disabled);
     C2D_DrawRectSolid(x + h * .25 + 8, y + 8, 0, h / 4, h / 2 - 8, STRUCT.buttonLabelFG);
     C2D_DrawTriangle(x + 12, y + h / 2, STRUCT.buttonLabelFG, x + h * .375 + 8, y + h - 8, STRUCT.buttonLabelFG, x + h * .75 + 4, y + h / 2, STRUCT.buttonLabelFG, 0);
     C2D_DrawText(&STRUCT.updatesText, C2D_AlignCenter|C2D_WithColor|C2D_AtBaseline, x + (w + (h * .5 + 8)) / 2, y + (h + 10) / 2 + 2.5f, 0, .7, .7, STRUCT.buttonLabelBG);
@@ -28,13 +35,13 @@ void menuMain__UpdateBtnRender(float x, float y, float w, float h, bool selected
 }
 
 void menuMain__ExitBtnRender(float x, float y, float w, float h, bool selected, bool touched, bool disabled) {
-    menuMain__ButtonBackground(x, y, w, h);
+    menuMain__ButtonBackground(x, y, w, h, disabled);
     C2D_DrawText(&STRUCT.exitText, C2D_AlignCenter|C2D_WithColor|C2D_AtBaseline, x + w / 2, y + (h + 10) / 2 + 2.5f, 0, .7, .7, STRUCT.buttonLabelBG);
     C2D_DrawText(&STRUCT.exitText, C2D_AlignCenter|C2D_WithColor|C2D_AtBaseline, x + w / 2, y + (h + 10) / 2, 0, .7, .7, STRUCT.buttonLabelFG);
 }
 
 void menuMain__SettingsBtnRender(float x, float y, float w, float h, bool selected, bool touched, bool disabled) {
-    menuMain__ButtonBackground(x, y, w, h);
+    menuMain__ButtonBackground(x, y, w, h, disabled);
     C2D_DrawRectSolid(x + h * .25 + 8, y + 8, 0, h / 4, h / 2 - 8, STRUCT.buttonLabelFG);
     C2D_DrawTriangle(x + 12, y + h / 2, STRUCT.buttonLabelFG, x + h * .375 + 8, y + h - 8, STRUCT.buttonLabelFG, x + h * .75 + 4, y + h / 2, STRUCT.buttonLabelFG, 0);
     C2D_DrawText(&STRUCT.settingsText, C2D_AlignCenter|C2D_WithColor|C2D_AtBaseline, x + (w + (h * .5 + 8)) / 2, y + (h + 10) / 2 + 2.5f, 0, .7, .7, STRUCT.buttonLabelBG);
@@ -67,35 +74,6 @@ void menuMain__Exit() {
 int menuMain__Act() {
     MenuDialog* dmydlg = NULL;
 
-    if (HID_BTNPRESSED & KEY_DLEFT) {
-        dmydlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_WAIT);
-        menuDialogMessage(dmydlg, "You pressed left.\n");
-        menuDialogMessageAppend(dmydlg, "This is a looong line of text, I hope it ain't break. Oh wait... it did? What a shame!\n\n1234567890123 123456789012345678901234567890123456789012345678901234567890");
-        menuDialogPrepare(dmydlg);
-        menuDialogShow(dmydlg);
-    }
-    if (HID_BTNPRESSED & KEY_DUP) {
-        dmydlg = menuDialogNewTemp(MENUDIALOG_PROGRESS|MENUDIALOG_WAIT);
-        menuDialogMessage(dmydlg, "You pressed up.\n");
-        menuDialogMessageAppend(dmydlg, "This is a looong line of text, I hope it ain't break. Oh wait... it did? What a shame!\n\n123456789012 123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
-        menuDialogPrepare(dmydlg);
-        menuDialogShow(dmydlg);
-    }
-    if (HID_BTNPRESSED & KEY_DRIGHT) {
-        dmydlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON2);
-        menuDialogMessage(dmydlg, "You pressed right.\n");
-        menuDialogMessageAppend(dmydlg, "This is a looong line of text, I hope it ain't break. Oh wait... it did? What a shame!\n\n12345678901 123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
-        menuDialogPrepare(dmydlg);
-        menuDialogShow(dmydlg);
-    }
-    if (HID_BTNPRESSED & KEY_DDOWN) {
-        dmydlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE);
-        menuDialogTitle(dmydlg, "Error Code 000-0000");
-        menuDialogMessage(dmydlg, "You pressed down.\n");
-        menuDialogMessageAppend(dmydlg, "This is a looong line of text, I hope it ain't break. Oh wait... it did? What a shame!\n\n12345678901234 123456789012345678901234567890");
-        menuDialogPrepare(dmydlg);
-        menuDialogShow(dmydlg);
-    }
     if (HID_BTNPRESSED & KEY_ZR)
         spawnUpdateCheckDialog();
 

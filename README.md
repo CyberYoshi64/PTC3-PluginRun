@@ -17,8 +17,8 @@ This GitHub repository contains the source code for the launcher of the [SmileBA
 
 You need the following items:
 
-- [A modified version of `bannertool`](https://github.com/CyberYoshi64/bannertool)
-- [`makerom`](https://github.com/3DSGuy/Project_CTR)
+- [bannertool (modified fork)](https://github.com/CyberYoshi64/bannertool)
+- [makerom](https://github.com/3DSGuy/Project_CTR)
 - devkitPro with all 3DS-based packages installed
 - [A slightly modified version of Citro2D that addresses this issue](https://github.com/devkitPro/citro2d/issues/46) (not entirely needed but recommended)
 
