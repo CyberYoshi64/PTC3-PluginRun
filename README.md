@@ -18,14 +18,12 @@ This GitHub repository contains the source code for the launcher of the [SmileBA
 You need the following items:
 
 - [A modified version of `bannertool`](https://github.com/CyberYoshi64/bannertool)
-- [A modified version of `makerom`](https://github.com/CyberYoshi64/cy64-scriptbox/blob/main/makerom-cy64.7z)
+- [`makerom`](https://github.com/3DSGuy/Project_CTR)
 - devkitPro with all 3DS-based packages installed
 - [A slightly modified version of Citro2D that addresses this issue](https://github.com/devkitPro/citro2d/issues/46) (not entirely needed but recommended)
 
 
 ## Why the modified builds?
-
-I want to make a pull request to `makerom` with my changes some time but I'm honestly a little scared of the reception.
 
 `bannertool` unfortunately is archived, so no pull requests can be made there...
 
@@ -36,9 +34,3 @@ The modified version of bannertool adds support to specify the smaller icon (i.e
 I did this because I feel like it's a nice addition to fine-tune the look of the icon in its smaller format.
 
 ~~If Nintendo did this a lot, why shouldn't we let this be possible, at least as an optional perk?~~
-
-### Relevant changes made to `makerom`
-
-makerom has not a great support to make anything but the main NCCH container. This modified build allows building manual containers properly to be able to include custom e-Manuals into the CIA version of this homebrew application.
-
-Without this, building would probably succeed with the 3DSX but fail on the CIA (or at least the manual would fail to load).
