@@ -3,22 +3,23 @@
 #include <3ds.h>
 #include "main.h"
 
+// Menus
 #include "menu/menuMain.h"
 #include "menu/menuPlay.h"
 #include "menu/menuTemplate.h"
 
 typedef enum MenuID {
-    MENUID_NONE = 0,
-    MENUID_MAIN,
-    MENUID_PLAY,
-    MENUID_UPDATES,
-    MENUID_SETTING_TOP,
-    MENUID_SAVEFS_COPY,
+    MENUID_NONE = 0,        // Used to exit the application
+    MENUID_MAIN,            // Main Menu
+    MENUID_PLAY,            // Start CYX
+    MENUID_UPDATES_TOP,     // Updates Top
+    MENUID_SETTING_TOP,     // Settings Top
+    MENUID_SAVEFS_COPY,     // "Menu" to copy between CYX and SB3 savefs
 } MenuID;
 
 enum MenuReactValue {
-    MENUREACT_CONTINUE = 0,
-    MENUREACT_NEXTMENU,
+    MENUREACT_CONTINUE = 0, // Menu is done processing input and wants to continue
+    MENUREACT_NEXTMENU,     // Menu is done processing input and wants to transition to another one - Only invoke this with menuNext()
 };
 
 typedef void (*menuPtrVoidF)();
@@ -27,12 +28,12 @@ typedef int (*menuPtrActF)();
 typedef void (*menuPtrRenderF)(gfxScreen_t);
 
 typedef struct MenuStructPointers_s {
-    menuPtrVoidF    Init;
-    menuPtrVoidF    Exit;
-    menuPtrActF     Act;
-    menuPtrRenderF  Render;
-    menuPtrBoolF    AnimIn;
-    menuPtrBoolF    AnimOut;
+    menuPtrVoidF    Init;       // Initialize & allocate data needed for the menu
+    menuPtrVoidF    Exit;       // Free and clean up data used by the menu
+    menuPtrActF     Act;        // Respond to user input
+    menuPtrRenderF  Render;     // Render the menu (called twice for both screens)
+    menuPtrBoolF    AnimIn;     // Used for fading in the menu elements (optional)
+    menuPtrBoolF    AnimOut;    // Used for fading out the menu elements (optional)
 } MenuStructPointers;
 
 typedef struct {
@@ -40,7 +41,7 @@ typedef struct {
     union {
         MenuMain__Struct        main;
         MenuPlay__Struct        play;
-        MenuTemplate__Struct    template;
+        MenuTemplate__Struct    template; // Dummy entry (it's to simplify creating menus)
         u8                  pad[32700];
     };
 } CTR_ALIGN(1024) MenuStruct;

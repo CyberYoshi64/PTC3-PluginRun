@@ -1,0 +1,7 @@
+--atlas --border edge -f LA4
+
+progress/base.png
+progress/baseMiddle.png
+progress/waiticon.png
+progress/waiticon_bg.png
+progress/spark.png

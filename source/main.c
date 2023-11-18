@@ -269,6 +269,12 @@ int main(int argc, char const *argv[]) {
         );
         fail = true;
     }
+    if (!(menuProgressSheet = C2D_SpriteSheetLoad("rom:/gfx/progress.t3x"))) {
+        sprintf(errorTextData + strlen(errorTextData),
+            "menuProgressSheet = NULL\n"
+        );
+        fail = true;
+    }
     if (fail){
         sprintf(errorTextData + strlen(errorTextData), "\nPlease get in contact with the creator of this application. Contact info can be found at https://cyberyoshi64.github.io \nPress START to exit the application.");
         drawError(NULL, true, KEY_START);
@@ -280,12 +286,11 @@ int main(int argc, char const *argv[]) {
     memset(menuStruct, 0, MENUSTRUCT_SIZE);
     currMenuPtr = &menuMain__Ptr;
 
-    for (u32 i = 0; i < C2D_SpriteSheetCount(menuDialogSheet); i++){
-        C3D_TexSetFilter(
-            C2D_SpriteSheetGetImage(menuDialogSheet, i).tex,
-            GPU_LINEAR, GPU_LINEAR
-        );
-    }
+    for (u32 i = 0; i < C2D_SpriteSheetCount(menuDialogSheet); i++)
+        C3D_TexSetFilter(C2D_SpriteSheetGetImage(menuDialogSheet, i).tex, GPU_LINEAR, GPU_LINEAR);
+
+    for (u32 i = 0; i < C2D_SpriteSheetCount(menuProgressSheet); i++)
+        C3D_TexSetFilter(C2D_SpriteSheetGetImage(menuProgressSheet, i).tex, GPU_LINEAR, GPU_LINEAR);
 
     // spawnUpdateCheckDialog();
 
@@ -387,6 +392,7 @@ int main(int argc, char const *argv[]) {
     }
 
     if (menuDialogSheet) C2D_SpriteSheetFree(menuDialogSheet);
+    if (menuProgressSheet) C2D_SpriteSheetFree(menuProgressSheet);
     appTaskExit();
     httpcExit();
     ndspExit();

@@ -82,7 +82,7 @@ int menuMain__Act() {
     }
 
     if (buttonTick(&STRUCT.updates)) {
-        dmydlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE);
+        dmydlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE|MENUDIALOG_WAIT|MENUDIALOG_PROGRESS);
         menuDialogTitle(dmydlg, "Feature not implemented");
         menuDialogMessage(dmydlg, "The updates page is not yet available. Please check for updates manually.");
         menuDialogPrepare(dmydlg);

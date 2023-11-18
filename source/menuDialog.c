@@ -144,6 +144,12 @@ void menuDialogPrepare(MenuDialog* self) {
 
     buttonSetup(&self->cancelBtn, 16, 187 + (!hasSecondBtn * 100), 144, 44);
     buttonSetup(&self->okayBtn, 16 + hasSecondBtn*144, 187 + (!haveBtn * 100), 144 * (2 - hasSecondBtn), 44);
+    progressBarSetBaseColor(&self->progress, menuDialogBackground);
+    progressBarSetWidth(&self->progress, 180);
+    progressBarUseSparkAnimation(&self->progress, true);
+    progressBarSetTintColor(&self->progress, -1, 0xFF8000);
+    progressBarSetTintColor(&self->progress, C2D_TopLeft, 0xFFC000);
+    progressBarSetTintColor(&self->progress, C2D_TopRight, 0xFFFF00);
 }
 
 void menuDialogFree(MenuDialog* self) {
@@ -293,8 +299,10 @@ void menuDialog__Render(MenuDialog* self, gfxScreen_t screen) {
             C2D_DrawImage(i, &p, &t);
             p.angle = 0;
             if (hasProgress) {
-                C2D_DrawRectSolid(160 - 110 * self->boxScale, p.pos.y - 8 * self->boxScale, 0, 180 * self->boxScale, 16 * self->boxScale, waitColor[0]);
-                C2D_DrawRectangle(160 - 110 * self->boxScale, p.pos.y - 8 * self->boxScale, 0, 180 * C2D_Clamp(self->progress, 0, 1) * self->boxScale, 16 * self->boxScale, waitColor[1], waitColor[2], waitColor[3], waitColor[3]);
+                progressBarSetPosition(&self->progress, 160 - 112 * self->boxScale, p.pos.y - 6 * self->boxScale);
+                progressBarSetScale(&self->progress, self->boxScale);
+                progressBarSetAlpha(&self->progress, self->boxAlpha);
+                progressBarRender(&self->progress);
             }
         }
         
@@ -395,11 +403,15 @@ bool menuDialog__Tick(MenuDialog* self) {
                 self->rc = 0;
         }
         if (self->waitCallback) {
-            if (self->waitCallback(&btn, &self->progress)) {
+            if (self->waitCallback(&btn, &self->progress.progress)) {
                 self->rc = 1+!!(btn & BIT(31));
             }
-        } else if ((self->mode & MENUDIALOG_WAIT) && !(self->mode & MENUDIALOG_ENABLE_BUTTON1)) {
-            self->rc = 2;
+        } else {
+            if ((self->mode & MENUDIALOG_WAIT) && !(self->mode & MENUDIALOG_ENABLE_BUTTON1))
+                self->rc = 2;
+            self->progress.progress += .001953125f;
+            if (HID_BTNPRESSED & KEY_X) self->progress.progress = 0.f;
+            if (HID_BTNPRESSED & KEY_Y) self->progress.progress = 1.f;
         }
 
         if (HID_BTNPRESSED & KEY_ZL)

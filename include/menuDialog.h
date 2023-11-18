@@ -7,6 +7,7 @@
 #include <string.h>
 #include <malloc.h>
 #include "menuButton.h"
+#include "menuProgress.h"
 
 #define MENUDLG__TITLE_SIZE   64
 #define MENUDLG__MSG_SIZE     2048
@@ -44,15 +45,15 @@ typedef bool    (*MenuDlgWaitCBF)(u32*, float*);
 typedef bool    (*MenuDlgButtonCBF)(s32);
 
 typedef struct MenuDialog_s {
-    u32                 mode;
-    s32                 rc;
+    u32                 mode;           // Mode to be initialized with
+    s32                 rc;             // Result code (1 = Okay, 2 = Cancel)
     float               boxScale;
     float               boxAlpha;
     u32                 state;
-    u32                 buttonState;
-    float               progress;
-    MenuDlgWaitCBF      waitCallback;
-    MenuDlgButtonCBF    buttonCallback;
+    u32                 buttonState;    // Not used yet, should gray out inactive buttons (see buttonCallback)
+    ProgressBar         progress;
+    MenuDlgWaitCBF      waitCallback;   // Wait callback - close the dialog when the task is done or to set inactive buttons
+    MenuDlgButtonCBF    buttonCallback; // Result callback - whether to accept the result code or act on it
     C2D_TextBuf         miscBuf;
     C2D_TextBuf         msgBuf;
     Button              cancelBtn;
@@ -65,7 +66,7 @@ typedef struct MenuDialog_s {
     C2D_Text            msgT;
     C2D_Text            buttonT[MENUDLG__BTN_COUNT];
     u32                 lines[MENUDLG__PARSELINE];
-} CTR_ALIGN(256) MenuDialog;
+} MenuDialog;
 
 extern C2D_SpriteSheet menuDialogSheet;
 
