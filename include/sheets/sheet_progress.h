@@ -3,6 +3,4 @@
 
 #define sheet_progress_base_idx 0
 #define sheet_progress_baseMiddle_idx 1
-#define sheet_progress_waiticon_idx 2
-#define sheet_progress_waiticon_bg_idx 3
-#define sheet_progress_spark_idx 4
+#define sheet_progress_spark_idx 2

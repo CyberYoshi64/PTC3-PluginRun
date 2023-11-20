@@ -4,6 +4,8 @@
 #define ALPHA menuStruct->alpha
 MenuStructPointers menuMain__Ptr = {menuMain__Init, menuMain__Exit, menuMain__Act, menuMain__Render, menuMain__AnimIn, menuMain__AnimOut};
 
+u32 menuMain__isCYXPresent;
+
 void menuMain__ButtonBackground(float x, float y, float w, float h, bool disabled) {
     if (!disabled)
         C2D_DrawRectangle(
@@ -50,9 +52,7 @@ void menuMain__SettingsBtnRender(float x, float y, float w, float h, bool select
 
 void menuMain__Init() {
     STRUCT.textbuf = C2D_TextBufNew(4096);
-    STRUCT.header.px = 200;
     STRUCT.header.py = 4;
-    STRUCT.header.sx = .75;
     STRUCT.header.sy = .5;
     
     C2D_TextParse(&STRUCT.header.text, STRUCT.textbuf, "Main Menu");
@@ -65,6 +65,10 @@ void menuMain__Init() {
     buttonSetupCB(&STRUCT.updates, 50, 102, 220, 64, menuMain__UpdateBtnRender);
     buttonSetupCB(&STRUCT.settings, 120, 200, 200, 40, menuMain__SettingsBtnRender);
     buttonSetupCB(&STRUCT.exitBtn, 0, 200, 100, 40, menuMain__ExitBtnRender);
+
+    menuMain__isCYXPresent =
+        archFileExists(SDMC_PREFIX PLUGIN_PATH) &&
+        archDirExists(SDMC_PREFIX GAME_FSPATH);
 }
 
 void menuMain__Exit() {
@@ -72,29 +76,28 @@ void menuMain__Exit() {
 }
 
 int menuMain__Act() {
-    MenuDialog* dmydlg = NULL;
+    Dialog* dmydlg = NULL;
 
     if (HID_BTNPRESSED & KEY_ZR)
         spawnUpdateCheckDialog();
 
     if (buttonTick(&STRUCT.play)) {
+        if (!menuMain__isCYXPresent) {
+            dmydlg = dialogNewTemp(DIALOG_ENABLE_BUTTON1);
+            dialogMessage(dmydlg, "CYX is either not installed or broken.\n\nPlease go to Updates to download the missing data.");
+            dialogPrepare(dmydlg);
+            dialogShow(dmydlg);
+            return MENUREACT_CONTINUE;
+        }
         return menuNext(MENUID_PLAY);
     }
 
     if (buttonTick(&STRUCT.updates)) {
-        dmydlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE|MENUDIALOG_WAIT|MENUDIALOG_PROGRESS);
-        menuDialogTitle(dmydlg, "Feature not implemented");
-        menuDialogMessage(dmydlg, "The updates page is not yet available. Please check for updates manually.");
-        menuDialogPrepare(dmydlg);
-        menuDialogShow(dmydlg);
+        return menuNext(MENUID_UPDATES_TOP);
     }
 
     if (buttonTick(&STRUCT.settings)) {
-        dmydlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE);
-        menuDialogTitle(dmydlg, "Feature not implemented");
-        menuDialogMessage(dmydlg, "Settings is not yet available. Please check for updates manually.");
-        menuDialogPrepare(dmydlg);
-        menuDialogShow(dmydlg);
+        return menuNext(MENUID_SETTING_TOP);
     }
     
     if (buttonTick(&STRUCT.exitBtn))
@@ -110,7 +113,7 @@ void menuMain__Render(gfxScreen_t screen) {
         u32 headerBannerBack = C2D_Color32f(0, 0, 0, ALPHA / 2);
         C2D_DrawRectangle(  0, STRUCT.header.py - 8, 0, 200, 16 + (30 * STRUCT.header.sy), headerBannerBack, headerBannerBack, 0, headerBannerBack);
         C2D_DrawRectangle(200, STRUCT.header.py - 8, 0, 200, 16 + (30 * STRUCT.header.sy), headerBannerBack, headerBannerBack, headerBannerBack, 0);
-        C2D_DrawText(&STRUCT.header.text, C2D_WithColor|C2D_AlignCenter, STRUCT.header.px, STRUCT.header.py, 0, STRUCT.header.sx, STRUCT.header.sy, C2D_Color32f(1, 1, 1, ALPHA));
+        C2D_DrawText(&STRUCT.header.text, C2D_WithColor|C2D_AlignCenter, 200, STRUCT.header.py, 0, .75, STRUCT.header.sy, C2D_Color32f(1, 1, 1, ALPHA));
     } else {
         buttonRender(&STRUCT.play);
         buttonRender(&STRUCT.updates);

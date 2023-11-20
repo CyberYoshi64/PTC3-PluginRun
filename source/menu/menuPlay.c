@@ -48,7 +48,7 @@ bool menuPlay__PrepareGameWaitCallback(u32* buttons, float* progress) {
     
     Result res;
     char buf[0x30];
-    MenuDialog* dlg;
+    Dialog* dlg;
 
     if (menuPlay__AppTaskFormat >= 0) {
         if (appTask_IsDone(menuPlay__AppTaskFormat)) {
@@ -58,11 +58,11 @@ bool menuPlay__PrepareGameWaitCallback(u32* buttons, float* progress) {
             if (res) {
                 if (res > 0) sprintf(buf, "Error code %ld", res);
                 if (res < 0) sprintf(buf, "Error code 0x%08lX", res);
-                dlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE);
-                menuDialogTitle(dlg, buf);
-                menuDialogMessage(dlg, "An error has occured while starting CYX.\n\nNote down the error code and contact the publisher of this application.");
-                menuDialogPrepare(dlg);
-                menuDialogShow(dlg);
+                dlg = dialogNewTemp(DIALOG_ENABLE_BUTTON1|DIALOG_TITLE);
+                dialogTitle(dlg, buf);
+                dialogMessage(dlg, "An error has occured while starting CYX.\n\nNote down the error code and contact the publisher of this application.");
+                dialogPrepare(dlg);
+                dialogShow(dlg);
                 return true;
             }
         }
@@ -97,7 +97,7 @@ bool menuPlay__PrepareGameWaitCallback(u32* buttons, float* progress) {
 bool menuPlay__PrepareWaitCallback(u32* buttons, float* progress) {
     
     Result res;
-    MenuDialog* dlg;
+    Dialog* dlg;
     char err[32];
     AM_TitleEntry amEntry = {0};
     u64 titleID;
@@ -106,12 +106,12 @@ bool menuPlay__PrepareWaitCallback(u32* buttons, float* progress) {
     switch (menuPlay__PrepareDialogState) {
     case 0:
         if (R_FAILED(res = amInit())) {
-            dlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE);
+            dlg = dialogNewTemp(DIALOG_ENABLE_BUTTON1|DIALOG_TITLE);
             snprintf(err, 32, "Error code AM-%08lX", res);
-            menuDialogTitle(dlg, err);
-            menuDialogMessage(dlg, "Couldn't check for SmileBASIC installations.\n\nPlease try again later. If issues persist, restart the system or contact CyberYoshi64.");
-            menuDialogPrepare(dlg);
-            menuDialogShow(dlg);
+            dialogTitle(dlg, err);
+            dialogMessage(dlg, "Couldn't check for SmileBASIC installations.\n\nPlease try again later. If issues persist, restart the system or contact CyberYoshi64.");
+            dialogPrepare(dlg);
+            dialogShow(dlg);
             menuNext(MENUID_MAIN);
             return true;
         }
@@ -174,20 +174,18 @@ bool menuPlay__CYXSetupCallback1(s32 rc) {
         menuPlay__StartGame = -1;
         menuNext(MENUID_SAVEFS_COPY);
     } else {
-        MenuDialog* dlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON2);
-        menuDialogMessage(dlg, "CYX will not inherit save data from any version of SmileBASIC.\n\nContinue to start CYX anyway?");
-        menuDialogSetButtonCallback(dlg, menuPlay__CYXSetupCallback2);
-        menuDialogPrepare(dlg);
-        menuDialogShow(dlg);
+        Dialog* dlg = dialogNewTemp(DIALOG_ENABLE_BUTTON2);
+        dialogMessage(dlg, "CYX will not inherit save data from any version of SmileBASIC.\n\nContinue to start CYX anyway?");
+        dialogSetButtonCallback(dlg, menuPlay__CYXSetupCallback2);
+        dialogPrepare(dlg);
+        dialogShow(dlg);
     }
     return true;
 }
 
 void menuPlay__Init() {
     STRUCT.textbuf = C2D_TextBufNew(4096);
-    STRUCT.header.px = 200;
     STRUCT.header.py = 4;
-    STRUCT.header.sx = .75;
     STRUCT.header.sy = .5;
     
     C2D_TextParse(&STRUCT.header.text, STRUCT.textbuf, "Start CYX");
@@ -207,40 +205,40 @@ void menuPlay__Init() {
 
     buttonSetupCB(&STRUCT.exitBtn, 0, 200, 100, 40, menuPlay__ExitBtnRender);
 
-    MenuDialog* dlg = NULL;
+    Dialog* dlg = NULL;
     if (!menuPlay__AvailableGameMask) {
-        dlg = menuDialogNewTemp(MENUDIALOG_WAIT);
-        menuDialogSetWaitCallback(dlg, menuPlay__PrepareWaitCallback);
-        menuDialogMessage(dlg, "Preparing...");
-        menuDialogPrepare(dlg);
-        menuDialogShow(dlg);
+        dlg = dialogNewTemp(DIALOG_WAIT);
+        dialogSetWaitCallback(dlg, menuPlay__PrepareWaitCallback);
+        dialogMessage(dlg, "Preparing...");
+        dialogPrepare(dlg);
+        dialogShow(dlg);
     }
-    STRUCT.badSaveDialog = menuDialogNew(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE);
-    menuDialogTitle(STRUCT.badSaveDialog, "Unable to launch CYX.");
-    menuDialogMessage(STRUCT.badSaveDialog, "The save data for this version of SmileBASIC doesn't exist.\nPlease start SmileBASIC to create the save data.\n\nCitra unfortunately prohibits creating it here.");
-    menuDialogPrepare(STRUCT.badSaveDialog);
-    STRUCT.outdatedGameDialog = menuDialogNew(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE);
-    menuDialogTitle(STRUCT.outdatedGameDialog, "Unable to launch CYX.");
-    menuDialogMessage(STRUCT.outdatedGameDialog, "This version of SmileBASIC is not up-to-date. Please obtain the update from the Nintendo eShop.");
-    menuDialogPrepare(STRUCT.outdatedGameDialog);
-    STRUCT.prepareGameDialog = menuDialogNew(MENUDIALOG_WAIT|MENUDIALOG_PROGRESS);
-    menuDialogMessage(STRUCT.prepareGameDialog, "Preparing...");
-    menuDialogSetWaitCallback(STRUCT.prepareGameDialog, menuPlay__PrepareGameWaitCallback);
-    menuDialogPrepare(STRUCT.prepareGameDialog);
-    STRUCT.cyxSaveRootSetupDialog = menuDialogNew(MENUDIALOG_ENABLE_BUTTON2);
-    menuDialogMessage(STRUCT.cyxSaveRootSetupDialog, "CYX is currently not fully set up yet.\n\nDo you want to copy the save data from this version of SmileBASIC to CYX?");
-    menuDialogSetButtonCallback(STRUCT.cyxSaveRootSetupDialog, menuPlay__CYXSetupCallback1);
-    menuDialogPrepare(STRUCT.cyxSaveRootSetupDialog);
+    STRUCT.badSaveDialog = dialogNew(DIALOG_ENABLE_BUTTON1|DIALOG_TITLE);
+    dialogTitle(STRUCT.badSaveDialog, "Unable to launch CYX.");
+    dialogMessage(STRUCT.badSaveDialog, "The save data for this version of SmileBASIC doesn't exist.\nPlease start SmileBASIC to create the save data.\n\nCitra unfortunately prohibits creating it here.");
+    dialogPrepare(STRUCT.badSaveDialog);
+    STRUCT.outdatedGameDialog = dialogNew(DIALOG_ENABLE_BUTTON1|DIALOG_TITLE);
+    dialogTitle(STRUCT.outdatedGameDialog, "Unable to launch CYX.");
+    dialogMessage(STRUCT.outdatedGameDialog, "This version of SmileBASIC is not up-to-date. Please obtain the update from the Nintendo eShop.");
+    dialogPrepare(STRUCT.outdatedGameDialog);
+    STRUCT.prepareGameDialog = dialogNew(DIALOG_WAIT|DIALOG_PROGRESS);
+    dialogMessage(STRUCT.prepareGameDialog, "Preparing...");
+    dialogSetWaitCallback(STRUCT.prepareGameDialog, menuPlay__PrepareGameWaitCallback);
+    dialogPrepare(STRUCT.prepareGameDialog);
+    STRUCT.cyxSaveRootSetupDialog = dialogNew(DIALOG_ENABLE_BUTTON2);
+    dialogMessage(STRUCT.cyxSaveRootSetupDialog, "CYX is currently not fully set up yet.\n\nDo you want to copy the save data from this version of SmileBASIC to CYX?");
+    dialogSetButtonCallback(STRUCT.cyxSaveRootSetupDialog, menuPlay__CYXSetupCallback1);
+    dialogPrepare(STRUCT.cyxSaveRootSetupDialog);
 
     menuPlay__IsCYXSaveRootPresent = archDirExists(SDMC_PREFIX SAVE_PATH);
 }
 
 void menuPlay__Exit() {
     C2D_TextBufDelete(STRUCT.textbuf);
-    menuDialogFree(STRUCT.badSaveDialog);
-    menuDialogFree(STRUCT.outdatedGameDialog);
-    menuDialogFree(STRUCT.prepareGameDialog);
-    menuDialogFree(STRUCT.cyxSaveRootSetupDialog);
+    dialogFree(STRUCT.badSaveDialog);
+    dialogFree(STRUCT.outdatedGameDialog);
+    dialogFree(STRUCT.prepareGameDialog);
+    dialogFree(STRUCT.cyxSaveRootSetupDialog);
 }
 
 int menuPlay__Act() {
@@ -260,22 +258,22 @@ int menuPlay__Act() {
 
     if (menuPlay__StartGame >= 0) {
         if (!menuPlay__IsCYXSaveRootPresent) {
-            menuDialogShow(STRUCT.cyxSaveRootSetupDialog);
+            dialogShow(STRUCT.cyxSaveRootSetupDialog);
         } else {
             if (menuPlay__BadSaveDataMask & BIT(menuPlay__StartGame)) {
                 menuPlay__StartGame = -1;
-                menuDialogShow(STRUCT.badSaveDialog);
+                dialogShow(STRUCT.badSaveDialog);
                 return MENUREACT_CONTINUE;
             }
             if (!(menuPlay__UsableGameMask & BIT(menuPlay__StartGame))) {
                 menuPlay__StartGame = -1;
-                menuDialogShow(STRUCT.outdatedGameDialog);
+                dialogShow(STRUCT.outdatedGameDialog);
                 return MENUREACT_CONTINUE;
             }
             bootTitle = bootableTID[menuPlay__StartGame];
             menuPlay__StartGame = -1;
             menuPlay__PrepareGameDialogState = 0;
-            menuDialogShow(STRUCT.prepareGameDialog);
+            dialogShow(STRUCT.prepareGameDialog);
         }
         return MENUREACT_CONTINUE;
     }
@@ -293,7 +291,7 @@ void menuPlay__Render(gfxScreen_t screen) {
         u32 headerBannerBack = C2D_Color32f(0, 0, 0, ALPHA / 2);
         C2D_DrawRectangle(  0, STRUCT.header.py - 8, 0, 200, 16 + (30 * STRUCT.header.sy), headerBannerBack, headerBannerBack, 0, headerBannerBack);
         C2D_DrawRectangle(200, STRUCT.header.py - 8, 0, 200, 16 + (30 * STRUCT.header.sy), headerBannerBack, headerBannerBack, headerBannerBack, 0);
-        C2D_DrawText(&STRUCT.header.text, C2D_WithColor|C2D_AlignCenter, STRUCT.header.px, STRUCT.header.py, 0, STRUCT.header.sx, STRUCT.header.sy, C2D_Color32f(1, 1, 1, ALPHA));
+        C2D_DrawText(&STRUCT.header.text, C2D_WithColor|C2D_AlignCenter, 200, STRUCT.header.py, 0, .75, STRUCT.header.sy, C2D_Color32f(1, 1, 1, ALPHA));
     } else {
         buttonRender(&STRUCT.exitBtn);
         C2D_DrawText(&STRUCT.launchHeading, C2D_AlignCenter|C2D_AtBaseline|C2D_WithColor, 160, 70, 0, .6, .6, C2D_Color32f(1, 1, 1, ALPHA));

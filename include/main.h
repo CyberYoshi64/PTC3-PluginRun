@@ -28,9 +28,8 @@ extern "C" {
 #include "hidRead.h"
 #include "curlWrapper.h"
 #include "ptc3_smdh_bin.h"
-
+#include "sheets/sheet_common.h"
 #include "menu.h"
-#include "menu/menuMain.h"
 
 #ifdef __cplusplus
 }
@@ -44,6 +43,8 @@ extern bool     blockHOME;  // Block HOME when error is shown
 
 extern C3D_RenderTarget    *topScr;     // Top screen render target
 extern C3D_RenderTarget    *botScr;     // Bottom screen render target
+
+extern C2D_SpriteSheet  commonSheet;    // Common sprite sheet
 
 enum GameRegion {
     GAMEREG_JPN = 0,

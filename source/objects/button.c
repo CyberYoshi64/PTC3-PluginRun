@@ -1,4 +1,4 @@
-#include "menuButton.h"
+#include "objects/button.h"
 #include "hidRead.h"
 
 float buttonAlpha = 1.f;

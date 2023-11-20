@@ -3,11 +3,11 @@
 #include <3ds.h>
 #include <citro2d.h>
 #include "main.h"
-#include "menuButton.h"
-#include "menuDialog.h"
+#include "objects/button.h"
+#include "objects/dialog.h"
 
 typedef struct {
-    //
+    C2D_TextBuf textbuf;
 } MenuTemplate__Struct;
 
 void    menuTemplate__Init(void);

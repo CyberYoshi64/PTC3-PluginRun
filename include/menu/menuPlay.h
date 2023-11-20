@@ -3,23 +3,21 @@
 #include <3ds.h>
 #include <citro2d.h>
 #include "main.h"
-#include "menuButton.h"
-#include "menuDialog.h"
+#include "objects/button.h"
+#include "objects/dialog.h"
 
 typedef struct {
     C2D_TextBuf textbuf;
     struct {
         C2D_Text    text;
-        float       px;
         float       py;
-        float       sx;
         float       sy;
     } header;
 
-    MenuDialog* badSaveDialog;
-    MenuDialog* outdatedGameDialog;
-    MenuDialog* prepareGameDialog;
-    MenuDialog* cyxSaveRootSetupDialog;
+    Dialog* badSaveDialog;
+    Dialog* outdatedGameDialog;
+    Dialog* prepareGameDialog;
+    Dialog* cyxSaveRootSetupDialog;
     
     u32 buttonLabelFG;
     u32 buttonLabelBG;

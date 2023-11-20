@@ -16,16 +16,24 @@ typedef struct ProgressBar_s {
     float   sparkAnim;
     float   alpha;
     float   progress;
+    
+    float   displayedProgress;
+    u32     dispAnimTimer;
+    
+    float   lastProgress;   // Old progress to determine animation
+    float   oldProgress;    // Old progress to compute animation
+    float   progStep;       // Difference between old and current progress;
 } ProgressBar;
 
 #define PROGRESSBAR_STRUCTSIZE  sizeof(ProgressBar)
 #define PROGRESSBAR_WIDTH       124.f
 #define PROGRESSBAR_HEIGHT      12.f
 
-extern C2D_SpriteSheet menuProgressSheet;
+extern C2D_SpriteSheet progressSheet;
 
 ProgressBar*    progressBarNew();
 void            progressBarFree(ProgressBar* self);
+void            progressBarInit(ProgressBar* self);
 void            progressBarRender(ProgressBar* self);
 void            progressBarSetBaseColor(ProgressBar* self, u32 c);
 void            progressBarSetTintColor(ProgressBar* self, s32 corner, u32 c);

@@ -12,20 +12,22 @@ u64 __appID;
 
 C3D_RenderTarget    *topScr;
 C3D_RenderTarget    *botScr;
+C2D_SpriteSheet     commonSheet;
 
-C2D_TextBuf errorTextBuf;
-C2D_Text errorTextStr;
-char errorTextData[4096] = {0};
+C2D_TextBuf         errorTextBuf;
+C2D_Text            errorTextStr;
+char                errorTextData[4096] = {0};
 
-MenuStruct* menuStruct = NULL;
-u32         menuStructMode = 0;
+MenuStruct*         menuStruct = NULL;
+u32                 menuStructMode = 0;
 
 MenuStructPointers* currMenuPtr;
 MenuStructPointers* nextMenuPtr;
-MenuDialog*         currDialog;
-MenuDialog*         nextDialog;
+Dialog*             currDialog;
+Dialog*             nextDialog;
 
-MenuStructPointers menuDefaultPtr = {NULL, NULL, menuDefault__Act, NULL, NULL, NULL};
+MenuStructPointers  menuDefaultPtr =
+    {NULL, NULL, menuDefault__Act, NULL, NULL, NULL};
 
 char latestVersion[16] = {0};
 char* latestVersionString;
@@ -74,20 +76,26 @@ void menuTick() {
 
 int menuNext(MenuID id) {
     switch (id) {
+    case MENUID_NONE:
+        nextMenuPtr = &menuDefaultPtr;
+        break;
     case MENUID_MAIN:
         nextMenuPtr = &menuMain__Ptr;
         break;
     case MENUID_PLAY:
         nextMenuPtr = &menuPlay__Ptr;
         break;
+    case MENUID_UPDATES_TOP:
+        nextMenuPtr = &menuUpdatesTop__Ptr;
+        break;
     default:
-        nextMenuPtr = &menuDefaultPtr;
+        nextMenuPtr = &menuTemplate__Ptr;
         break;
     }
     return MENUREACT_NEXTMENU;
 }
 
-void menuDialogShow(MenuDialog* dlg) {
+void dialogShow(Dialog* dlg) {
     if (!dlg) return;
     if (nextDialog) return;
     dlg->state = 0;
@@ -132,15 +140,15 @@ bool updateDlgWaitCallback(u32 *buttons, float *progress) {
     if (appTask_IsDone(updateCURLTask)) {
         *progress = 1.0f;
         if (appTask_GetResult(updateCURLTask)) {
-            MenuDialog* s = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE);
+            Dialog* s = dialogNewTemp(DIALOG_ENABLE_BUTTON1|DIALOG_TITLE);
             if (s) {
                 char title[32];
                 sprintf(title, "Error code %d", appTask_GetResult(updateCURLTask));
-                menuDialogTitle(s, title);
-                menuDialogMessage(s, "Could not check for the latest version.\n\nCURL returned error: ");
-                menuDialogMessageAppend(s, CURL_lastErrorCode);
-                menuDialogPrepare(s);
-                menuDialogShow(s);
+                dialogTitle(s, title);
+                dialogMessage(s, "Could not check for the latest version.\n\nCURL returned error: ");
+                dialogMessageAppend(s, CURL_lastErrorCode);
+                dialogPrepare(s);
+                dialogShow(s);
             }
             *buttons |= BIT(31);
         } else {
@@ -158,24 +166,24 @@ bool spawnUpdateCheckDialog() {
     if (updateCURLTask >= 0) return false;
     updateCURLTask = appTask_DownloadData(URL_UPDATEINFO, &latestVersionString);
     
-    MenuDialog* updateDlg;
+    Dialog* updateDlg;
     
     if (updateCURLTask < 0) {
-        updateDlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_TITLE);
+        updateDlg = dialogNewTemp(DIALOG_ENABLE_BUTTON1|DIALOG_TITLE);
         if (updateDlg) {
-            menuDialogTitle(updateDlg, "An error has occured");
-            menuDialogMessage(updateDlg, "Unable to download update data.\n\nPlease try again later.");
-            menuDialogPrepare(updateDlg);
-            menuDialogShow(updateDlg);
+            dialogTitle(updateDlg, "An error has occured");
+            dialogMessage(updateDlg, "Unable to download update data.\n\nPlease try again later.");
+            dialogPrepare(updateDlg);
+            dialogShow(updateDlg);
         }
         return false;
     } else {
-        updateDlg = menuDialogNewTemp(MENUDIALOG_WAIT|MENUDIALOG_PROGRESS);
+        updateDlg = dialogNewTemp(DIALOG_WAIT|DIALOG_PROGRESS);
         if (updateDlg) {
-            menuDialogMessage(updateDlg, "Checking for updates...");
-            menuDialogSetWaitCallback(updateDlg, (MenuDlgWaitCBF)updateDlgWaitCallback);
-            menuDialogPrepare(updateDlg);
-            menuDialogShow(updateDlg);
+            dialogMessage(updateDlg, "Checking for updates...");
+            dialogSetWaitCallback(updateDlg, updateDlgWaitCallback);
+            dialogPrepare(updateDlg);
+            dialogShow(updateDlg);
         }
         return true;
     }
@@ -187,16 +195,16 @@ bool menuAskExitBtnCB(s32 rc) {
 };
 
 void menuAskExit() {
-    MenuDialog* dlg;
-    dlg = menuDialogNewTemp(MENUDIALOG_ENABLE_BUTTON1|MENUDIALOG_ENABLE_BUTTON2);
+    Dialog* dlg;
+    dlg = dialogNewTemp(DIALOG_ENABLE_BUTTON2);
     if (dlg) {
-        menuDialogMessage(dlg, "Do you want to close the application?");
-        menuDialogButton(dlg, 1, "No");
-        menuDialogButton(dlg, 2, "Yes");
-        menuDialogSetButtonCallback(dlg, (MenuDlgButtonCBF)menuAskExitBtnCB);
-        menuDialogMessage(dlg, "Do you want to close the application?");
-        menuDialogPrepare(dlg);
-        menuDialogShow(dlg);
+        dialogMessage(dlg, "Do you want to close the application?");
+        dialogButton(dlg, 1, "No");
+        dialogButton(dlg, 2, "Yes");
+        dialogSetButtonCallback(dlg, menuAskExitBtnCB);
+        dialogMessage(dlg, "Do you want to close the application?");
+        dialogPrepare(dlg);
+        dialogShow(dlg);
     }
 }
 
@@ -263,15 +271,21 @@ int main(int argc, char const *argv[]) {
         );
         fail = true;
     }
-    if (!(menuDialogSheet = C2D_SpriteSheetLoad("rom:/gfx/dialog.t3x"))) {
+    if (!(dialogSheet = C2D_SpriteSheetLoad("rom:/gfx/dialog.t3x"))) {
         sprintf(errorTextData + strlen(errorTextData),
-            "menuDialogSheet = NULL\n"
+            "dialogSheet = NULL\n"
         );
         fail = true;
     }
-    if (!(menuProgressSheet = C2D_SpriteSheetLoad("rom:/gfx/progress.t3x"))) {
+    if (!(progressSheet = C2D_SpriteSheetLoad("rom:/gfx/progress.t3x"))) {
         sprintf(errorTextData + strlen(errorTextData),
-            "menuProgressSheet = NULL\n"
+            "progressSheet = NULL\n"
+        );
+        fail = true;
+    }
+    if (!(commonSheet = C2D_SpriteSheetLoad("rom:/gfx/common.t3x"))) {
+        sprintf(errorTextData + strlen(errorTextData),
+            "commonSheet = NULL\n"
         );
         fail = true;
     }
@@ -286,11 +300,14 @@ int main(int argc, char const *argv[]) {
     memset(menuStruct, 0, MENUSTRUCT_SIZE);
     currMenuPtr = &menuMain__Ptr;
 
-    for (u32 i = 0; i < C2D_SpriteSheetCount(menuDialogSheet); i++)
-        C3D_TexSetFilter(C2D_SpriteSheetGetImage(menuDialogSheet, i).tex, GPU_LINEAR, GPU_LINEAR);
+    for (u32 i = 0; i < C2D_SpriteSheetCount(dialogSheet); i++)
+        C3D_TexSetFilter(C2D_SpriteSheetGetImage(dialogSheet, i).tex, GPU_LINEAR, GPU_LINEAR);
 
-    for (u32 i = 0; i < C2D_SpriteSheetCount(menuProgressSheet); i++)
-        C3D_TexSetFilter(C2D_SpriteSheetGetImage(menuProgressSheet, i).tex, GPU_LINEAR, GPU_LINEAR);
+    for (u32 i = 0; i < C2D_SpriteSheetCount(progressSheet); i++)
+        C3D_TexSetFilter(C2D_SpriteSheetGetImage(progressSheet, i).tex, GPU_LINEAR, GPU_LINEAR);
+
+    for (u32 i = 0; i < C2D_SpriteSheetCount(commonSheet); i++)
+        C3D_TexSetFilter(C2D_SpriteSheetGetImage(commonSheet, i).tex, GPU_LINEAR, GPU_LINEAR);
 
     // spawnUpdateCheckDialog();
 
@@ -304,13 +321,14 @@ int main(int argc, char const *argv[]) {
             menuNext(1);
                 
         if (currDialog) {
-            if (menuDialog__Tick(currDialog)) {
-                if (currDialog->mode & MENUDIALOG_ONESHOT)
-                    menuDialogFree(currDialog);
+            if (dialog__Tick(currDialog)) {
+                if (currDialog->mode & DIALOG_ONESHOT)
+                    dialogFree(currDialog);
                 currDialog = NULL;
             }
         }        
         menuTick();
+        waitIconTick();
         
         if (nextDialog && !currDialog) {
             currDialog = nextDialog;
@@ -352,7 +370,7 @@ int main(int argc, char const *argv[]) {
             currMenuPtr->Render(GFX_TOP);
         
         if (currDialog)
-            menuDialog__Render(currDialog, GFX_TOP);
+            dialog__Render(currDialog, GFX_TOP);
 
         C2D_DrawRectSolid(0, 0, 0, 400, 240, C2D_Color32f(0, 0, 0, screenFadeAlpha));
         C2D_SceneBegin(botScr);
@@ -363,7 +381,7 @@ int main(int argc, char const *argv[]) {
             currMenuPtr->Render(GFX_BOTTOM);
         
         if (currDialog)
-            menuDialog__Render(currDialog, GFX_BOTTOM);
+            dialog__Render(currDialog, GFX_BOTTOM);
 
         C2D_DrawRectSolid(0, 0, 0, 320, 240, C2D_Color32f(0, 0, 0, screenFadeAlpha));
         C3D_FrameEnd(0);
@@ -372,12 +390,19 @@ int main(int argc, char const *argv[]) {
         frameCnt = C3D_FrameCounter(0);
         if (screenFadeAlpha > 0.f) screenFadeAlpha -= .03125f;
     }
+    
+    exiting = true; // In case it wasn't set before
 
-    if (currDialog && currDialog->mode & MENUDIALOG_ONESHOT)
-        menuDialogFree(currDialog);
+    if (menuStructMode) {
+        if (currMenuPtr->Exit)
+            currMenuPtr->Exit();
+    }
+    
+    if (currDialog && currDialog->mode & DIALOG_ONESHOT)
+        dialogFree(currDialog);
 
-    if (nextDialog && nextDialog->mode & MENUDIALOG_ONESHOT)
-        menuDialogFree(nextDialog);
+    if (nextDialog && nextDialog->mode & DIALOG_ONESHOT)
+        dialogFree(nextDialog);
 
     if (!aptShouldClose()) {
         blockHOME = true;
@@ -391,13 +416,14 @@ int main(int argc, char const *argv[]) {
         }
     }
 
-    if (menuDialogSheet) C2D_SpriteSheetFree(menuDialogSheet);
-    if (menuProgressSheet) C2D_SpriteSheetFree(menuProgressSheet);
+    if (dialogSheet)    C2D_SpriteSheetFree(dialogSheet);
+    if (progressSheet)  C2D_SpriteSheetFree(progressSheet);
+    if (commonSheet)    C2D_SpriteSheetFree(commonSheet);
     appTaskExit();
     httpcExit();
     ndspExit();
-    romfsUnmount("rom");
     archExit();
+    romfsUnmount("rom");
     C3D_RenderTargetDelete(botScr);
     C3D_RenderTargetDelete(topScr);
     C2D_Fini();

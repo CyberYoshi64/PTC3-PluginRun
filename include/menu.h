@@ -6,6 +6,7 @@
 // Menus
 #include "menu/menuMain.h"
 #include "menu/menuPlay.h"
+#include "menu/menuUpdatesTop.h"
 #include "menu/menuTemplate.h"
 
 typedef enum MenuID {
@@ -41,7 +42,8 @@ typedef struct {
     union {
         MenuMain__Struct        main;
         MenuPlay__Struct        play;
-        MenuTemplate__Struct    template; // Dummy entry (it's to simplify creating menus)
+        MenuUpdatesTop__Struct  updatesTop;
+        MenuTemplate__Struct    _template; // Dummy entry (it's to simplify creating menus)
         u8                  pad[32700];
     };
 } CTR_ALIGN(1024) MenuStruct;
@@ -50,15 +52,17 @@ typedef struct {
 
 extern MenuStructPointers menuMain__Ptr;
 extern MenuStructPointers menuPlay__Ptr;
+extern MenuStructPointers menuUpdatesTop__Ptr;
 extern MenuStructPointers menuTemplate__Ptr;
+
 extern MenuStruct* menuStruct;
 
-extern MenuStructPointers* currMenuPtr;
-extern MenuStructPointers* nextMenuPtr;
-extern MenuDialog*         currDialog;
-extern MenuDialog*         nextDialog;
+extern MenuStructPointers*  currMenuPtr;
+extern MenuStructPointers*  nextMenuPtr;
+extern Dialog*              currDialog;
+extern Dialog*              nextDialog;
 
-void menuDialogShow(MenuDialog* dlg);
+void dialogShow(Dialog* dlg);
 int menuNext(MenuID id);
 void menuAskExit(void);
 bool spawnUpdateCheckDialog(void);

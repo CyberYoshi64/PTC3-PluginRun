@@ -1,0 +1,4 @@
+--atlas --border edge -f A4
+
+common/waiticon.png
+common/waiticon_bg.png
