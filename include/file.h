@@ -1,6 +1,13 @@
 #pragma once
 #include "main.h"
 
+typedef struct FS_PathUTF8_s {
+    FS_Path     path;
+    FS_Archive  arch;
+    u32         type;
+    void*       buf;
+} FS_PathUTF8;
+
 enum FileArchiveMode {
     ARCHMODE_VACANT     = 0,        // State: Vacant | Mount value: Default
     ARCHMODE_READ       = BIT( 0),  // Read
@@ -25,14 +32,6 @@ Result  archMount(FS_ArchiveID archID, FS_MediaType mediaType, u64 id, const cha
 Result  archUnmount(const char* prefix);
 void    archUnmountAll(void);
 void    archGetPath(FS_Archive *handle, FS_Path* path, const char* pathStr, u32* type);
-bool    archDirExists(const char* path);
-bool    archFileExists(const char* path);
-
-
-
-
-
-
 
 /**
  * @brief Check, if a directory exists
@@ -46,9 +45,16 @@ bool archDirExists(const char* path);
  * @brief Create a directory
  * 
  * @param path Path to the directory
- * @param attr Attribute to create directory with
  */
 Result archDirCreate(const char* path);
+
+/**
+ * @brief Create a directory and its parent folders if they don't exist
+ * 
+ * @param path Path to the directory
+ * @param forFile Whether the end of the path is a file or an extra directory
+ */
+Result archDirCreateRecursive(const char* path, bool forFile);
 
 /**
  * @brief Delete a directory (Fail, if directory isn't empty)
@@ -104,6 +110,15 @@ bool archFileExists(const char* path);
  * @param size Base file size to create with
  */
 Result archFileCreate(const char* path, u32 attr, u64 size);
+
+/**
+ * @brief Create a file and its parent folders if they don't exist
+ * 
+ * @param path Path to the file
+ * @param attr Attributes to create the file with
+ * @param size Base file size to create with
+ */
+Result archFileCreateRecursive(const char* path, u32 attr, u64 size);
 
 /**
  * @brief Delete a file

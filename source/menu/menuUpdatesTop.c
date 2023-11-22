@@ -4,7 +4,7 @@
 #define ALPHA menuStruct->alpha
 MenuStructPointers menuUpdatesTop__Ptr = {menuUpdatesTop__Init, menuUpdatesTop__Exit, menuUpdatesTop__Act, menuUpdatesTop__Render, menuUpdatesTop__AnimIn, menuUpdatesTop__AnimOut};
 
-void menuUpdatesTo__ExitBtnRender(float x, float y, float w, float h, bool selected, bool touched, bool disabled) {
+void menuUpdatesTop__ExitBtnRender(float x, float y, float w, float h, bool selected, bool touched, bool disabled) {
     menuMain__ButtonBackground(x, y, w, h, disabled);
     C2D_DrawText(&STRUCT.exitText, C2D_AlignCenter|C2D_WithColor|C2D_AtBaseline, x + w / 2, y + (h + 10) / 2 + 2.5f, 0, .7, .7, STRUCT.buttonLabelBG);
     C2D_DrawText(&STRUCT.exitText, C2D_AlignCenter|C2D_WithColor|C2D_AtBaseline, x + w / 2, y + (h + 10) / 2, 0, .7, .7, STRUCT.buttonLabelFG);
@@ -16,7 +16,7 @@ void menuUpdatesTop__Init() {
     STRUCT.header.sy = .5;
     C2D_TextParse(&STRUCT.header.text, STRUCT.textbuf, "Updates");
     C2D_TextParse(&STRUCT.exitText, STRUCT.textbuf, "\uE001 Back");
-    buttonSetupCB(&STRUCT.exitBtn, 0, 200, 100, 40, menuUpdatesTo__ExitBtnRender);
+    buttonSetupCB(&STRUCT.exitBtn, 0, 200, 128, 40, menuUpdatesTop__ExitBtnRender);
 }
 
 void menuUpdatesTop__Exit() {

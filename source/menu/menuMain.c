@@ -63,8 +63,8 @@ void menuMain__Init() {
     
     buttonSetupCB(&STRUCT.play, 50, 32, 220, 64, menuMain__PlayBtnRender);
     buttonSetupCB(&STRUCT.updates, 50, 102, 220, 64, menuMain__UpdateBtnRender);
-    buttonSetupCB(&STRUCT.settings, 120, 200, 200, 40, menuMain__SettingsBtnRender);
-    buttonSetupCB(&STRUCT.exitBtn, 0, 200, 100, 40, menuMain__ExitBtnRender);
+    buttonSetupCB(&STRUCT.settings, 144, 200, 186, 40, menuMain__SettingsBtnRender);
+    buttonSetupCB(&STRUCT.exitBtn, 0, 200, 128, 40, menuMain__ExitBtnRender);
 
     menuMain__isCYXPresent =
         archFileExists(SDMC_PREFIX PLUGIN_PATH) &&
@@ -80,6 +80,27 @@ int menuMain__Act() {
 
     if (HID_BTNPRESSED & KEY_ZR)
         spawnUpdateCheckDialog();
+
+    if (HID_BTNPRESSED & KEY_DLEFT) {
+        char buf[0x40];
+        //sprintf(buf, "archFileCreateRecursive: %08lX", archFileCreateRecursive("sdmc:/PTC3PLG/savefs-test/lol.bin",0,32768));
+        archDirCreate("sdmc:/PTC3PLG");
+        archDirCreate("sdmc:/PTC3PLG/savefs-test");
+        sprintf(buf, "archFileCreate: %08lX", archFileCreate("sdmc:/PTC3PLG/savefs-test/lol.bin",0,32768));
+        dmydlg = dialogNewTemp(DIALOG_ENABLE_BUTTON1);
+        dialogMessage(dmydlg, buf);
+        dialogPrepare(dmydlg);
+        dialogShow(dmydlg);
+    };
+
+    if (HID_BTNPRESSED & KEY_DRIGHT) {
+        char buf[0x40];
+        sprintf(buf, "archDirCreateRecursive: %08lX", archDirCreateRecursive("sdmc:/PTC3PLG/savefs-test2", false));
+        dmydlg = dialogNewTemp(DIALOG_ENABLE_BUTTON1);
+        dialogMessage(dmydlg, buf);
+        dialogPrepare(dmydlg);
+        dialogShow(dmydlg);
+    };
 
     if (buttonTick(&STRUCT.play)) {
         if (!menuMain__isCYXPresent) {

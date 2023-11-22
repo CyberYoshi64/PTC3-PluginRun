@@ -88,6 +88,9 @@ int menuNext(MenuID id) {
     case MENUID_UPDATES_TOP:
         nextMenuPtr = &menuUpdatesTop__Ptr;
         break;
+    case MENUID_SAVEFS_COPY:
+        nextMenuPtr = &menuSaveCopy__Ptr;
+        break;
     default:
         nextMenuPtr = &menuTemplate__Ptr;
         break;

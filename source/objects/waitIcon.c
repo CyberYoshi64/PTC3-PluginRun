@@ -43,7 +43,7 @@ void waitIconSetScale(WaitIcon *self, float scale) {
 
 void waitIconSetBaseColor(WaitIcon* self, u32 c) {
     if (!self) return;
-    self->baseColor = c & 0xFFFFFF;
+    self->baseColor = c;
 }
 
 void waitIconSetTintColor(WaitIcon* self, s32 corner, u32 c) {

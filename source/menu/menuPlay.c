@@ -164,7 +164,6 @@ bool menuPlay__PrepareWaitCallback(u32* buttons, float* progress) {
 bool menuPlay__CYXSetupCallback2(s32 rc) {
     if (rc == 1) {
         menuPlay__IsCYXSaveRootPresent = true;
-        archDirCreate(SDMC_PREFIX SAVE_PATH);
     } else
         menuPlay__StartGame = -1;
     return true;
@@ -172,6 +171,45 @@ bool menuPlay__CYXSetupCallback2(s32 rc) {
 bool menuPlay__CYXSetupCallback1(s32 rc) {
     if (rc == 1) {
         menuPlay__StartGame = -1;
+        saveCopy__Clear();
+        if R_FAILED(archMount(ARCHIVE_USER_SAVEDATA, MEDIATYPE_SD, bootTitle, "save", 0)) {
+            Dialog* dlg = dialogNewTemp(DIALOG_ENABLE_BUTTON1|DIALOG_TITLE);
+            dialogTitle(dlg, "Unable to copy data");
+            dialogMessage(dlg, "The save data for this version of SmileBASIC doesn't exist.\n\nStart SmileBASIC once to create the data or skip copying it.");
+            dialogPrepare(dlg);
+            dialogShow(dlg);
+            return true;
+        };
+        archMount(ARCHIVE_EXTDATA, MEDIATYPE_SD, bootTitle, "data", 0);
+        
+        Handle d; u32 nextEntry;
+        FS_DirectoryEntry e;
+        char buf[2][0x200];
+        if R_SUCCEEDED(archDirOpen(&d, "data:/")) {
+            while (true) {
+                FSDIR_Read(d, &nextEntry, 1, &e);
+                if (!nextEntry) break;
+                memset(buf, 0, sizeof(buf));
+                sprintf(buf[0], "%s", "data:/");
+                sprintf(buf[1], "%s", SDMC_PREFIX SAVE_PATH);
+                utf16_to_utf8((u8*)buf[0]+strlen(buf[0]), e.name, 192);
+                utf16_to_utf8((u8*)buf[1]+strlen(buf[1]), e.name, 192);
+                saveCopy__Add(buf[0], buf[1]);
+            }
+            FSDIR_Close(d);
+        }
+        if (saveCopy__Add("save:/config.dat", SDMC_PREFIX SAVE_PATH "config.dat")) {
+            Dialog* dlg = dialogNewTemp(DIALOG_ENABLE_BUTTON1|DIALOG_TITLE);
+            dialogTitle(dlg, "Unable to copy data");
+            dialogMessage(dlg, "The file 'config.dat' is missing on SmileBASIC doesn't exist.\n\nStart SmileBASIC once to create the file or skip copying it.");
+            dialogPrepare(dlg);
+            dialogShow(dlg);
+            saveCopy__Clear();
+            archUnmount("save");
+            archUnmount("data");
+            return true;
+        }
+        archDirCreateRecursive(SDMC_PREFIX SAVE_PATH "###", false);
         menuNext(MENUID_SAVEFS_COPY);
     } else {
         Dialog* dlg = dialogNewTemp(DIALOG_ENABLE_BUTTON2);
@@ -230,7 +268,9 @@ void menuPlay__Init() {
     dialogSetButtonCallback(STRUCT.cyxSaveRootSetupDialog, menuPlay__CYXSetupCallback1);
     dialogPrepare(STRUCT.cyxSaveRootSetupDialog);
 
-    menuPlay__IsCYXSaveRootPresent = archDirExists(SDMC_PREFIX SAVE_PATH);
+    menuPlay__IsCYXSaveRootPresent = archFileExists(SDMC_PREFIX SAVE_PATH "config.dat") && archDirExists(SDMC_PREFIX SAVE_PATH "###");
+    archUnmount("save");
+    archUnmount("data");
 }
 
 void menuPlay__Exit() {
@@ -257,6 +297,7 @@ int menuPlay__Act() {
     }
 
     if (menuPlay__StartGame >= 0) {
+        bootTitle = bootableTID[menuPlay__StartGame];
         if (!menuPlay__IsCYXSaveRootPresent) {
             dialogShow(STRUCT.cyxSaveRootSetupDialog);
         } else {
@@ -270,7 +311,6 @@ int menuPlay__Act() {
                 dialogShow(STRUCT.outdatedGameDialog);
                 return MENUREACT_CONTINUE;
             }
-            bootTitle = bootableTID[menuPlay__StartGame];
             menuPlay__StartGame = -1;
             menuPlay__PrepareGameDialogState = 0;
             dialogShow(STRUCT.prepareGameDialog);

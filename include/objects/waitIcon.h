@@ -26,7 +26,7 @@ void        waitIconFree(WaitIcon *self);
 void        waitIconInit(WaitIcon *self);
 void        waitIconSetPosition(WaitIcon *self, float x, float y);
 void        waitIconSetScale(WaitIcon *self, float scale);
-void        waitIconSetBackColor(WaitIcon *self, u32 color);
+void        waitIconSetBaseColor(WaitIcon *self, u32 color);
 void        waitIconSetTintColor(WaitIcon *self, s32 corner, u32 color);
 void        waitIconSetAlpha(WaitIcon *self, float alpha);
 void        waitIconRender(WaitIcon *self);

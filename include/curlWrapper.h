@@ -8,25 +8,30 @@ enum CURLTaskType {
     APPTASK_DOWN_RAW,
     APPTASK_FORMAT_SAVE,
     APPTASK_FORMAT_EXTDATA,
+    APPTASK_COPY_FILE,
 };
 
 typedef struct {
-    u32 type;
-    int done;
-    int rc;
-    char url[256];
+    u32     type;
+    int     done;
+    int     rc;
+    char    url[256];
     union {
-        char** downData;
-        Handle file;
+        char**  downData;
+        Handle  file;
         struct {
-            u64 titleID;
-            FS_MediaType mediaType;
-            u32 files;
-            u32 dirs;
-            bool dupData;
+            char    dest[256];
+            bool    isDir;
+        } fileC;
+        struct {
+            u64             titleID;
+            FS_MediaType    mediaType;
+            u32             files;
+            u32             dirs;
+            bool            dupData;
         } format;
     } data;
-} CTR_ALIGN(512) AppTask;
+} CTR_ALIGN(256) AppTask;
 
 #define APPTASK_SIZE           sizeof(AppTask)
 #define APPTASKS_MAX           32
@@ -54,6 +59,7 @@ int appTask_DownloadData(const char* url, char** out);
 int appTask_DownloadFile(const char* url, Handle fd);
 int appTask_FormatSave(u64 titleID, FS_MediaType mediaType, u32 files, u32 dirs, bool dupData);
 int appTask_FormatExtData(u64 titleID, FS_MediaType mediaType, u32 files, u32 dirs);
+int appTask_CopyFile(const char* src, const char* dest, bool isDir);
 
 int appTask_GetResult(u32 index);
 int appTask_IsDone(u32 index);

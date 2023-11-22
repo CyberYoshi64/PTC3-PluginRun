@@ -7,6 +7,7 @@
 #include "menu/menuMain.h"
 #include "menu/menuPlay.h"
 #include "menu/menuUpdatesTop.h"
+#include "menu/menuSaveCopy.h"
 #include "menu/menuTemplate.h"
 
 typedef enum MenuID {
@@ -43,6 +44,7 @@ typedef struct {
         MenuMain__Struct        main;
         MenuPlay__Struct        play;
         MenuUpdatesTop__Struct  updatesTop;
+        MenuSaveCopy__Struct    saveCopy;
         MenuTemplate__Struct    _template; // Dummy entry (it's to simplify creating menus)
         u8                  pad[32700];
     };
@@ -53,6 +55,7 @@ typedef struct {
 extern MenuStructPointers menuMain__Ptr;
 extern MenuStructPointers menuPlay__Ptr;
 extern MenuStructPointers menuUpdatesTop__Ptr;
+extern MenuStructPointers menuSaveCopy__Ptr;
 extern MenuStructPointers menuTemplate__Ptr;
 
 extern MenuStruct* menuStruct;

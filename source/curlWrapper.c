@@ -355,6 +355,95 @@ exit:
 	return retcode;
 }
 
+int copyFile(const char* src, const char* dest, bool isSrcFolder) {
+	Result res = 0;
+	Handle source = 0;
+	Handle destH = 0;
+	u64 size = 0;
+	u32 bytesRead, bytesWritten;
+	void* tmp = NULL;
+	void* tmp2 = NULL;
+	void* tmp3 = NULL;
+
+	CURL_lastErrorCode[0] = 0;
+
+	if (isSrcFolder) {
+		tmp = memalign(1024, sizeof(FS_DirectoryEntry));
+		tmp2 = malloc(1024);
+		tmp3 = malloc(1024);
+		if (!tmp) {
+			res = 1; goto exit;
+		}
+		if (!tmp2) {
+			res = 2; goto exit;
+		}
+		if (!tmp3) {
+			res = 3; goto exit;
+		}
+		if R_FAILED(res = archDirOpen(&source, src)) goto exit;
+		if (!archDirExists(dest)) {
+			if R_FAILED(res = archDirCreateRecursive(dest, false)) goto exit;
+		}
+		while (true) {
+			if R_FAILED(FSDIR_Read(source, &bytesRead, 1, tmp)) goto exit;
+			if (!bytesRead) break;
+			curl_progress_dltotal += bytesRead * !(((FS_DirectoryEntry*)tmp)->attributes & FS_ATTRIBUTE_DIRECTORY);
+		}
+		FSDIR_Close(source);
+		if R_FAILED(res = archDirOpen(&source, src)) goto exit;
+		while (true) {
+			if R_FAILED(FSDIR_Read(source, &bytesRead, 1, tmp)) goto exit;
+			if (!bytesRead) break;
+			memset(tmp2, 0, 1024);
+			memset(tmp3, 0, 1024);
+			sprintf(tmp2, "%s/", src);
+			sprintf(tmp3, "%s/", dest);
+			utf16_to_utf8(tmp2 + strlen(tmp2), ((FS_DirectoryEntry*)tmp)->name, 256);
+			utf16_to_utf8(tmp3 + strlen(tmp3), ((FS_DirectoryEntry*)tmp)->name, 256);
+			snprintf(CURL_lastErrorCode, 255, "%s", (char*)tmp2);
+			bool isDir = ((FS_DirectoryEntry*)tmp)->attributes & FS_ATTRIBUTE_DIRECTORY;
+			if ((res = copyFile(tmp2, tmp3, isDir))) goto exit;
+		}
+	} else {
+		tmp = malloc(32768);
+		if (!tmp) {
+			res = 4; goto exit;
+		}
+		if (!archFileExists(src)) {
+			res = 0xC8804472;
+			goto exit;
+		}
+		if R_FAILED(res = archFileOpen(&source, src, FS_OPEN_READ)) goto exit;
+		FSFILE_GetSize(source, &size);
+		snprintf(CURL_lastErrorCode, 255, "%s", src);
+		if R_FAILED(res = archFileCreateRecursive(dest, 0, size)) {
+			archFileDelete(dest);
+			if R_FAILED(res = archFileCreateRecursive(dest, 0, size)) goto exit;
+		}
+		if R_FAILED(res = archFileOpen(&destH, dest, FS_OPEN_WRITE)) goto exit;
+		curl_progress_ulnow = 0;
+		curl_progress_ultotal = size;
+		while (curl_progress_ulnow < curl_progress_ultotal) {
+			if R_FAILED(FSFILE_Read(source, &bytesRead, curl_progress_ulnow, tmp, 32768)) goto exit;
+			if R_FAILED(FSFILE_Write(destH, &bytesWritten, curl_progress_ulnow, tmp, bytesRead, FS_WRITE_FLUSH)) goto exit;
+			curl_progress_ulnow += bytesRead;
+		}
+	}
+	curl_progress_dlnow += 1;
+exit:
+	if (isSrcFolder) {
+		if (source) FSDIR_Close(source);
+	} else {
+		if (source) FSFILE_Close(source);
+	}
+
+	if (destH) FSFILE_Close(destH);
+	if (tmp3) free(tmp3);
+	if (tmp2) free(tmp2);
+	if (tmp) free(tmp);
+	return res;
+}
+
 int appTask__GetVacant() {
     if (!app_tasks) return -1;
     for (u32 i = 0; i < APPTASKS_MAX; i++) {
@@ -420,6 +509,20 @@ int appTask_FormatExtData(u64 titleID, FS_MediaType mediaType, u32 files, u32 di
 	return taskIndex;
 }
 
+int appTask_CopyFile(const char* src, const char* dest, bool isDir) {
+	int taskIndex = appTask__GetVacant();
+	if (taskIndex < 0) return taskIndex;
+	AppTask *task = app_tasks + taskIndex;
+	strncpy(task->url, src, 255);
+	strncpy(task->data.fileC.dest, dest, 255);
+	task->data.fileC.isDir = isDir;
+	task->done = 0;
+	task->type = APPTASK_COPY_FILE;
+	app_tasks_mask |= BIT(taskIndex);
+	app_tasks_pause = 0;
+	return taskIndex;
+}
+
 int appTask_GetResult(u32 index) {
     if (!app_tasks) return -1;
     if (index >= APPTASKS_MAX) return -2;
@@ -456,9 +559,9 @@ int appTask_Clear(u32 index) {
     if (index >= APPTASKS_MAX) return -2;
     AppTask* task = app_tasks + index;
     if (!task->type) return 0;
-    if (!task->done) return -3;
+    if (index == app_tasks_current && !task->done) return -3;
     task->type = APPTASK_VACANT;
-    return task->rc;
+    return !!task->rc;
 }
 
 void appTaskThread(void* arg) {
@@ -469,6 +572,8 @@ void appTaskThread(void* arg) {
         if (!app_tasks_pause) {
             app_tasks_pausedOn = -1U;
 			if (!currentTask->done) {
+				CURL_lastErrorCode[0] = 0;
+				curl_progress_dltotal = curl_progress_dlnow = curl_progress_ultotal = curl_progress_ulnow = 0;
                 switch (currentTask->type) {
                     case APPTASK_DOWN_FILE:
                         currentTask->rc =
@@ -486,6 +591,10 @@ void appTaskThread(void* arg) {
                         currentTask->rc =
                             formatExtData(currentTask->data.format.titleID, currentTask->data.format.mediaType, currentTask->data.format.files, currentTask->data.format.dirs);
                         break;
+                    case APPTASK_COPY_FILE:
+                        currentTask->rc =
+                            copyFile(currentTask->url, currentTask->data.fileC.dest, currentTask->data.fileC.isDir);
+						break;
 					default:
 						break;
                 }
@@ -505,7 +614,7 @@ void appTaskThread(void* arg) {
                 currentTask = app_tasks;
             }
         }
-        Sleep(.01666f);
+        Sleep(.01f);
     }
     threadExit(0);
 }
