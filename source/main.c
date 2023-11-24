@@ -7,7 +7,6 @@ bool blockHOME = false;
 u64 bootTitle = 0;
 u32 mainCnt = 0, frameCnt;
 float screenFadeAlpha = 1;
-
 u64 __appID;
 
 C3D_RenderTarget    *topScr;
@@ -20,7 +19,6 @@ char                errorTextData[4096] = {0};
 
 MenuStruct*         menuStruct = NULL;
 u32                 menuStructMode = 0;
-
 MenuStructPointers* currMenuPtr;
 MenuStructPointers* nextMenuPtr;
 Dialog*             currDialog;
@@ -33,15 +31,14 @@ char latestVersion[16] = {0};
 char* latestVersionString;
 int updateCURLTask = -1;
 
-s64 checkCitra(){
+s64 checkCitra() {
     s64 output = 0;
     svcGetSystemInfo(&output, 0x20000, 0);
     return output;
 }
 
 void menuTick() {
-    switch (menuStructMode)
-    {
+    switch (menuStructMode) {
     case 0:
         if (currMenuPtr->Init)
             currMenuPtr->Init();
@@ -137,9 +134,9 @@ void drawError(const char* error, bool standalone, u32 waitButton){
 }
 
 bool updateDlgWaitCallback(u32 *buttons, float *progress) {
-    if (appTask_GetCurrentTask() == updateCURLTask) {
+    if (appTask_GetCurrentTask() == updateCURLTask)
         curlGetDownloadState(NULL, NULL, progress);
-    }
+
     if (appTask_IsDone(updateCURLTask)) {
         *progress = 1.0f;
         if (appTask_GetResult(updateCURLTask)) {
@@ -227,22 +224,22 @@ int main(int argc, char const *argv[]) {
     
     errorTextBuf = C2D_TextBufNew(sizeof(errorTextData));
     
-    u32 transFlags =    GX_TRANSFER_FLIP_VERT(false)|
-                        GX_TRANSFER_OUT_TILED(false)|
-                        GX_TRANSFER_RAW_COPY(false)|
-                        GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8)|
-                        GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB565)|
-                        GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO);
+    u32 gfxTrsFlg = GX_TRANSFER_FLIP_VERT(false)|
+                    GX_TRANSFER_OUT_TILED(false)|
+                    GX_TRANSFER_RAW_COPY(false)|
+                    GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8)|
+                    GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB565)|
+                    GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO);
     
     sprintf(errorTextData, "The application failed to initialize:\n\n");
 
 	topScr = C3D_RenderTargetCreate(240, 400, GPU_RB_RGBA8, GPU_RB_DEPTH16);
 	C3D_RenderTargetClear(topScr, C3D_CLEAR_ALL, 0, 0);
-    C3D_RenderTargetSetOutput(topScr, GFX_TOP, GFX_LEFT, transFlags);
+    C3D_RenderTargetSetOutput(topScr, GFX_TOP, GFX_LEFT, gfxTrsFlg);
 	
 	botScr = C3D_RenderTargetCreate(240, 320, GPU_RB_RGBA8, GPU_RB_DEPTH16);
     C3D_RenderTargetClear(botScr, C3D_CLEAR_ALL, 0, 0);
-	C3D_RenderTargetSetOutput(botScr, GFX_BOTTOM, GFX_LEFT, transFlags);
+	C3D_RenderTargetSetOutput(botScr, GFX_BOTTOM, GFX_LEFT, gfxTrsFlg);
 
     if (R_FAILED(res = archInit())) {
         sprintf(errorTextData + strlen(errorTextData),

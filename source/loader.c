@@ -23,7 +23,8 @@ and redistribute it freely, subject to the following restrictions:
 /*
   Changes applied:
   - Adding support for custom loader commands from the
-    Luma 3GX fork (https://github.com/PabloMK7/Luma3DS_3GX)
+    Luma 3DS extensions
+   (https://github.com/LumaTeam/Luma3DS/commit/c055fb6f5e20c4b4ff205bf25e520f14b190800d#diff-3c0ce07c331ab8707953a67eb1c149f16e0d880b1375b98fb54201e0959592f5R584-R597)
 */
 
 #include <string.h>
@@ -114,4 +115,3 @@ Result LOADER__Custom__ControlApplicationMemoryModeOverride(ControlApplicationMe
 	currentConfig = (ControlApplicationMemoryModeOverrideConfig*)cmdbuf[2];
 	return (Result)cmdbuf[1];
 }
-

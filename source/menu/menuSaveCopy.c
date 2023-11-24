@@ -71,7 +71,6 @@ void menuSaveCopy__Exit() {
 }
 
 int menuSaveCopy__Act() {
-
     Dialog* td;
 
     progressBarSetProgress(&STRUCT.current, curlGetUploadPercentage());
@@ -128,7 +127,6 @@ int menuSaveCopy__Act() {
         dialogShow(td);
         menuNext(MENUID_PLAY);
     }
-    
     return MENUREACT_CONTINUE;
 }
 
@@ -191,11 +189,13 @@ bool saveCopy__Add(const char* src, const char* dest) {
     }
     return false;
 }
+
 void saveCopy__Clear() {
     memset(saveCopyEntries, 0, sizeof(saveCopyEntries));
     saveCopyTotalTasks = 0;
     saveCopyDoneTasks = 0;
 }
+
 void saveCopy__RetryFailed() {
     SaveCopyEntry* e = saveCopyEntries;
     for (u32 i=0; i<SAVECOPYENTRY_MAX; i++, e++) {

@@ -1,7 +1,6 @@
 #include "hidRead.h"
 
 HIDStruct hidData;
-
 extern bool blockHOME;
 
 void hidRead() {
@@ -42,6 +41,7 @@ bool hidTouchedBox(u32 x, u32 y, u32 w, u32 h) {
         (HID_TOUCH.py < y+h)
     );
 }
+
 bool hidTouchedBoxBefore(u32 x, u32 y, u32 w, u32 h) {
     return (
         (HID_TOUCHOLD.px >= x) &&
@@ -50,6 +50,7 @@ bool hidTouchedBoxBefore(u32 x, u32 y, u32 w, u32 h) {
         (HID_TOUCHOLD.py < y+h)
     );
 }
+
 bool hidTouchedArea(u32 x1, u32 y1, u32 x2, u32 y2) {
     return (
         (HID_TOUCH.px >= x1) &&
@@ -58,6 +59,7 @@ bool hidTouchedArea(u32 x1, u32 y1, u32 x2, u32 y2) {
         (HID_TOUCH.py <= y2)
     );
 }
+
 bool hidTouchedAreaBefore(u32 x1, u32 y1, u32 x2, u32 y2) {
     return (
         (HID_TOUCHOLD.px >= x1) &&

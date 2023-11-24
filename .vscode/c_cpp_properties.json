@@ -10,7 +10,12 @@
                 "/opt/devkitpro/portlibs/3ds/include/**",
                 "/opt/devkitpro/devkitARM/arm-none-eabi/include/**"
             ],
-            "defines": [],
+            "defines": [
+                "APP_VERSION_MAJOR=0",
+                "APP_VERSION_MINOR=0",
+                "APP_VERSION_MICRO=0",
+                "HAVE_MANUAL=1"
+            ],
             "cStandard": "c11",
             "cppStandard": "gnu++20",
             "intelliSenseMode": "gcc-arm"

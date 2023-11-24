@@ -33,17 +33,17 @@ enum DlgMode {
 /**
  * @brief Dialog Wait Mode callback
  * @return Boolean, whether to close the dialog
- * @param[out] u32 Button mask
- * @param[out] float Progress percentage
+ * @param[out] bm Button mask
+ * @param[out] progress Progress percentage
  */
-typedef bool    (*DlgWaitCBF)(u32*, float*);
+typedef bool    (*DlgWaitCBF)(u32* bm, float* progress);
 
 /**
  * @brief Dialog Button callback
  * @return Boolean, whether to accept the input
- * @param[in] s32  Dialog Result Code
+ * @param[in] rc Dialog Result Code
  */
-typedef bool    (*DlgButtonCBF)(s32);
+typedef bool    (*DlgButtonCBF)(s32 rc);
 
 typedef struct Dialog_s {
     u32                 mode;           // Mode to be initialized with
@@ -72,17 +72,120 @@ typedef struct Dialog_s {
     u32                 lines[__DLG_PARSELINE];
 } Dialog;
 
+// Dedicated spritesheet for the dialog box
 extern C2D_SpriteSheet dialogSheet;
 
+/**
+ * @brief Allocate a new dialog box structure
+ * 
+ * @param mode Dialog Mode (see enum DlgMode)
+ * @return New dialog structure; NULL on failure
+ */
 Dialog* dialogNew(u32 mode);
+
+/**
+ * @brief Allocate a temporary dialog box structure
+ * 
+ * @note
+ * This function only allocates, if the menu system has a free spot
+ * for a dialog box to queue itself in. If there is no free spot, NULL is returned.
+ * 
+ * @note
+ * Additionally, if a dialog struct was created, you shouldn't `free` it yourself;
+ * that is handles automatically.
+ * 
+ * @param mode Dialog Mode (see enum DlgMode)
+ * @return New dialog structure; NULL on failure
+ */
 Dialog* dialogNewTemp(u32 mode);
+
+/**
+ * @brief Sets the message of a dialog box
+ * 
+ * @note
+ * Line breaks get automatically inserted.
+ * 
+ * @note
+ * The dialog box currently doesn't implement a scrolling system,
+ * so if the text takes too many lines, it gets cut off.
+ * 
+ * @param self Dialog box struct
+ * @param message Message to display
+ */
 void dialogMessage(Dialog* self, const char* message);
+
+/**
+ * @brief Append to a message of a dialog box
+ * 
+ * @note
+ * Line breaks get automatically inserted.
+ * 
+ * @note
+ * The dialog box currently doesn't implement a scrolling system,
+ * so if the text takes too many lines, it gets cut off.
+ * 
+ * @param self Dialog box struct
+ * @param message Message to display
+ */
 void dialogMessageAppend(Dialog* self, const char* message);
+
+/**
+ * @brief Set a title of a dialog box
+ * 
+ * @note
+ * This function is only effective if the dialog mode includes
+ * the `DIALOG_TITLE` flag.
+ * 
+ * @param self Dialog box struct
+ * @param title Title to display
+ */
 void dialogTitle(Dialog* self, const char* title);
+
+/**
+ * @brief Override the text of a button of a dialog box
+ * 
+ * @note
+ * This function is only effective if the dialog mode includes
+ * either the `DIALOG_ENABLE_BUTTON1` or `DIALOG_ENABLE_BUTTON2` flags.
+ * 
+ * @note
+ * If the dialog mode doesn't include the `DIALOG_ENABLE_BUTTON2` flag,
+ * setting the text for index 1 has no effect.
+ * 
+ * @param self Dialog box struct
+ * @param index 0=Reset, 1=Cancel, 2=Okay
+ * @param text Text to display
+ */
 void dialogButton(Dialog* self, int index, const char* text);
+
+/**
+ * @brief Set the wait callback of a dialog box (for use with `DIALOG_WAIT`/`DIALOG_PROGRESS`)
+ * 
+ * @param self Dialog box struct
+ * @param func Wait callback function
+ */
 void dialogSetWaitCallback(Dialog* self, DlgWaitCBF func);
+
+/**
+ * @brief Set the button callback of a dialog box
+ * 
+ * @param self Dialog box struct
+ * @param func Button callback function
+ */
 void dialogSetButtonCallback(Dialog* self, DlgButtonCBF func);
+
+/**
+ * @brief Prepares a dialog box for rendering itself
+ * 
+ * @param self Dialog box struct
+ */
 void dialogPrepare(Dialog* self);
+
+/**
+ * @brief Unallocate a dialog box from memory
+ * 
+ * @param self Dialog box struct
+ */
 void dialogFree(Dialog* self);
 
 void dialog__Render(Dialog* self, gfxScreen_t screen);

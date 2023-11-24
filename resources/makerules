@@ -1,12 +1,11 @@
 # - NAME: Project name
-# - PROCESS_NAME: Process name (CIA)
+# - PROCESS_NAME: Process name (CCI / CIA)
 # - INCLUDE_DIRS: Directories containing include headers.
 # - SOURCE_DIRS: Directories containing source files to compile.
 # - BUILD_DIR: Directory to store build files in.
 # - OUTPUT_DIR: Directory to output the final results to.
 # - LIBRARY_DIRS: Optional; Directories containing libraries to compile against.
 # - LIBRARIES: Optional; Libraries to compile against.
-# - EXTRA_OUTPUT_FILES: Optional; Extra files to copy to the output directory.
 # - BUILD_FLAGS: Optional; Shared build flags.
 # - BUILD_FLAGS_CC: Optional; C build flags.
 # - BUILD_FLAGS_CXX: Optional; C++ build flags.
@@ -16,33 +15,34 @@
 #     - Default value: 0
 # - VERSION_MICRO: Optional; Micro version number.
 #     - Default value: 0
-# - PRODUCT_CODE: CIA/3DS product code.
-# - UNIQUE_ID: CIA/3DS unique ID.
-# - BANNER_AUDIO: Audio file to use in the CIA/3DS banner.
+# - PRODUCT_CODE: CIA/CCI product code.
+# - UNIQUE_ID: CIA/CCI unique ID.
+# - BANNER_AUDIO: Audio file to use in the CIA/CCI banner.
 #     - Supported file types: WAV, CWAV
-# - BANNER_IMAGE: Graphics to use in the CIA/3DS banner.
+# - BANNER_IMAGE: Graphics to use in the CIA/CCI banner.
 #     - Supported file types: 256x128 PNG, CGFX
-# - USE_ON_SD: Optional; Whether the CIA/3DS should be installed to the SD card.
+# - USE_ON_SD: Optional; Whether the CIA/CCI should be installed to the SD card.
 #     - Supported values: true, false
 #     - Default value: true
-# - MEMORY_TYPE: Optional; CIA/3DS application memory layout.
+# - MEMORY_TYPE: Optional; CIA/CCI application memory layout.
 #     - Supported values: Application, System, Base
 #     - Default value: Application
-# - SYSTEM_MODE: Optional; CIA/3DS legacy system mode.
+# - SYSTEM_MODE: Optional; CIA/CCI legacy system mode.
 #     - Supported values: 32MB, 64MB, 72MB, 80MB, 96MB
 #     - Default value: 64MB
-# - SYSTEM_MODE_EXT: Optional; CIA/3DS extended system mode.
+# - SYSTEM_MODE_EXT: Optional; CIA/CCI extended system mode.
 #     - Supported values: Legacy, 124MB, 178MB
 #     - Default value: Legacy
-# - CPU_MODE: Optional; CIA/3DS CPU frequency. 804MHz is N3DS-only.
+# - CPU_MODE: Optional; CIA/CCI CPU frequency. 804MHz is N3DS-only.
 #     - Supported values: 268MHz, 804MHz
 #     - Default value: 268MHz
-# - ENABLE_L2_CACHE: Optional; Whether the CIA/3DS should use the N3DS L2 cache.
+# - ENABLE_L2_CACHE: Optional; Whether the CIA/CCI should use the N3DS L2 cache.
 #     - Supported values: true, false
 #     - Default value: false
-# - ROMFS_DIR: Optional; Directory containing RomFS files.
-# - LOGO: Optional; Logo animation to use when launching the CIA/3DS.
+# - LOGO: Optional; Logo animation to use when launching the CIA/CCI.
 #     - Supported file types: BCMA.LZ
+# - MAIN_ROMFS: Optional; Directory containing RomFS files for application.
+# - MANUAL_ROMFS: Optional; Directory containing RomFS files for electronic manual.
 #
 # PROLOGUE #
 
@@ -131,7 +131,8 @@ COMMON_CC_FLAGS += -mword-relocations -ffast-math -march=armv6k -mtune=mpcore -m
 
 NAME ?= App
 PROCESS_NAME ?= $(NAME)
-RSF ?= main.rsf
+MAIN_RSF ?= main.rsf
+MANUAL_RSF ?= manual.rsf
 CATEGORY ?= Application
 USE_ON_SD ?= true
 MEMORY_TYPE ?= Application
@@ -141,17 +142,22 @@ CPU_SPEED ?= 268MHz
 ENABLE_L2_CACHE ?= false
 
 _3DSXTOOL_FLAGS :=
-COMMON_MAKEROM_FLAGS := -rsf $(RSF) -target t -exefslogo -icon $(ICON) -banner $(BUILD_DIR)/banner.bnr -major $(VERSION_MAJOR) -minor $(VERSION_MINOR) -micro $(VERSION_MICRO) -DAPP_TITLE="$(PROCESS_NAME)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)" -DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)" -DAPP_CATEGORY="$(CATEGORY)" -DAPP_USE_ON_SD="$(USE_ON_SD)" -DAPP_MEMORY_TYPE="$(MEMORY_TYPE)" -DAPP_CPU_SPEED="$(CPU_SPEED)" -DAPP_ENABLE_L2_CACHE="$(ENABLE_L2_CACHE)" -DAPP_VERSION_MAJOR="$(VERSION_MAJOR)"
-SECOND_MAKEROM_FLAGS := -major $(VERSION_MAJOR) -minor $(VERSION_MINOR) -micro $(VERSION_MICRO)
-MANUAL_MAKECFA :=
+MAIN_MAKEROM_FLAGS := -rsf $(MAIN_RSF) -target t -exefslogo -icon $(ICON) -banner $(BUILD_DIR)/banner.bnr -major $(VERSION_MAJOR) -minor $(VERSION_MINOR) -micro $(VERSION_MICRO) -DAPP_TITLE="$(PROCESS_NAME)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)" -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)" -DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)" -DAPP_CATEGORY="$(CATEGORY)" -DAPP_USE_ON_SD="$(USE_ON_SD)" -DAPP_MEMORY_TYPE="$(MEMORY_TYPE)" -DAPP_CPU_SPEED="$(CPU_SPEED)" -DAPP_ENABLE_L2_CACHE="$(ENABLE_L2_CACHE)" -DAPP_VERSION_MAJOR="$(VERSION_MAJOR)"
+FINAL_MAKEROM_FLAGS := -major $(VERSION_MAJOR) -minor $(VERSION_MINOR) -micro $(VERSION_MICRO)
+MANUAL_MAKEROM_FLAGS :=
 
-ifneq ("$(wildcard $(ROMFS_DIR))","")
-	_3DSXTOOL_FLAGS += --romfs=$(ROMFS_DIR)
-	COMMON_MAKEROM_FLAGS += -DAPP_ROMFS="$(ROMFS_DIR)"
+ifneq ("$(wildcard $(MAIN_ROMFS))","")
+	_3DSXTOOL_FLAGS += --romfs=$(MAIN_ROMFS)
+	MAIN_MAKEROM_FLAGS += -DAPP_ROMFS="$(MAIN_ROMFS)"
+endif
+
+ifneq ("$(wildcard $(MANUAL_ROMFS))","")
+	MANUAL_MAKEROM_FLAGS += -DROMFS_DIR="$(MANUAL_ROMFS)"
+	FINAL_MAKEROM_FLAGS += -i $(BUILD_DIR)/manual.cfa:1:1
 endif
 
 ifneq ("$(wildcard $(LOGO))","")
-	COMMON_MAKEROM_FLAGS += -logo "$(LOGO)"
+	MAIN_MAKEROM_FLAGS += -logo "$(LOGO)"
 endif
 
 ifeq ($(suffix $(BANNER_IMAGE)),.cgfx)
@@ -164,11 +170,6 @@ ifeq ($(suffix $(BANNER_AUDIO)),.bcwav)
 	BANNER_AUDIO_ARG := -ca
 else
 	BANNER_AUDIO_ARG := -a
-endif
-
-ifneq ("$(MANUAL_RSF)","")
-	SECOND_MAKEROM_FLAGS += -i $(BUILD_DIR)/manual.cfa:1:1
-	MANUAL_MAKECFA := makerom -f cfa -o $(BUILD_DIR)/manual.cfa -rsf $(MANUAL_RSF) -DAPP_UNIQUE_ID="$(UNIQUE_ID)"
 endif
 
 CLANG_CC := $(subst gcc,clang,$(CC))
@@ -192,10 +193,6 @@ endif
 
 ifeq ($(findstring -std,$(BUILD_FLAGS_CXX)),)
 	CXX_FLAGS += -std=gnu++11
-endif
-
-ifneq ($(EXTRA_OUTPUT_FILES),)
-	EXTRA_OUTPUT_COPY_CMD := cp -r $(EXTRA_OUTPUT_FILES) $(OUTPUT_DIR)
 endif
 
 # MAIN RULES #
@@ -235,20 +232,23 @@ $(BUILD_DIR)/%.shbin.c: %.shlist
 
 %.cci: %.cxi
 	@echo $@
-	@makerom -f cci -o $@ -i $<:0:0 $(SECOND_MAKEROM_FLAGS)
+	@makerom -f cci -o $@ -i $<:0:0 $(FINAL_MAKEROM_FLAGS)
 
 %.cia: %.cxi
 	@echo $@
-	@makerom -f cia -o $@ -i $<:0:0 $(SECOND_MAKEROM_FLAGS)
+	@makerom -f cia -o $@ -i $<:0:0 $(FINAL_MAKEROM_FLAGS)
 
 %.3dsx: %.elf $(ICON_3DSX)
 	@echo $@
 	@3dsxtool $< $@ --smdh=$(word 2,$^) $(_3DSXTOOL_FLAGS)
 
 %.cxi: .WAIT %.elf $(BUILD_DIR)/banner.bnr $(ICON)
+ifneq ("$(MANUAL_MAKEROM_FLAGS)","")
+	@echo $(BUILD_DIR)/manual.cfa
+	@makerom -f cfa -o $(BUILD_DIR)/manual.cfa -rsf $(MANUAL_RSF) -DAPP_UNIQUE_ID="$(UNIQUE_ID)" $(MANUAL_MAKEROM_FLAGS)
+endif
 	@echo $@
-	@makerom -f cxi -o $@ -elf $< -DAPP_ENCRYPTED=false $(COMMON_MAKEROM_FLAGS)
-	@$(MANUAL_MAKECFA)
+	@makerom -f cxi -o $@ -elf $< $(MAIN_MAKEROM_FLAGS)
 
 %.elf: .WAIT $(OBJECT_FILES)
 	@echo $@

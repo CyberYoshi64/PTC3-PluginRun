@@ -2,7 +2,7 @@ BasicInfo:
   ContentType             : Manual
 
 RomFs:
-  RootPath                : romfs-manual
+  RootPath                : $(ROMFS_DIR)
 
 TitleInfo:
   UniqueId                : $(APP_UNIQUE_ID)

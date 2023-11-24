@@ -107,10 +107,12 @@ void progressBarRender(ProgressBar* self) {
         self->sparkAnim = 0;
     }
 }
+
 void progressBarSetBaseColor(ProgressBar* self, u32 c) {
     if (!self) return;
     self->baseColor = c;
 }
+
 void progressBarSetTintColor(ProgressBar* self, s32 corner, u32 c) {
     if (!self) return;
     if (corner >= 0 && corner < 4)
@@ -120,23 +122,28 @@ void progressBarSetTintColor(ProgressBar* self, s32 corner, u32 c) {
             self->tintColor[i] = c & 0xFFFFFF;
     }
 }
+
 void progressBarSetPosition(ProgressBar* self, float x, float y) {
     if (!self) return;
     self->px = x;
     self->py = y;
 }
+
 void progressBarSetWidth(ProgressBar* self, float width) {
     if (!self) return;
     self->width = C2D_Clamp(width / C2D_Clamp(self->scale, .001f, 1000.f), 12.f, 65536.f);
 }
+
 void progressBarSetScale(ProgressBar* self, float scale) {
     if (!self) return;
     self->scale = scale;
 }
+
 void progressBarSetAlpha(ProgressBar* self, float alpha) {
     if (!self) return;
     self->alpha = alpha;
 }
+
 void progressBarSetProgress(ProgressBar* self, float p) {
     if (!self) return;
     self->progress = p;

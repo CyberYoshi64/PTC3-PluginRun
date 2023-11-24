@@ -27,7 +27,7 @@ bool arch__isReadOnly(FS_ArchiveID id) {
         //(id == ARCHIVE_EXTDATA); // iykyk
 }
 
-Result archMount(FS_ArchiveID archID, FS_MediaType mediaType, u64 id, const char* prefix, u32 mode) {
+Result archMount(FS_ArchiveID archID, FS_MediaType mediaType, u64 id, const char *prefix, u32 mode) {
     Result res = MAKERESULT(RL_STATUS, RS_OUTOFRESOURCE, RM_APPLICATION, RD_OUT_OF_RANGE);
     FileArchiveHandles *entry = archiveHandles;
     for (u32 i=0; i < FILEARCHIVEHANDLES_MAX; i++, entry++) {
@@ -108,7 +108,8 @@ Result archMount(FS_ArchiveID archID, FS_MediaType mediaType, u64 id, const char
     }
     return res;
 }
-Result archUnmount(const char* prefix) {
+
+Result archUnmount(const char *prefix) {
     if (!prefix || !*prefix) return MAKERESULT(RL_USAGE, RS_INVALIDARG, RM_APPLICATION, RD_INVALID_COMBINATION);
     FileArchiveHandles *entry = archiveHandles;
     for (u32 i=0; i < FILEARCHIVEHANDLES_MAX; i++, entry++) {
@@ -122,6 +123,7 @@ Result archUnmount(const char* prefix) {
     }
     return 0xC8804478;
 }
+
 void archUnmountAll() {
     FileArchiveHandles *entry = archiveHandles;
     for (u32 i=0; i < FILEARCHIVEHANDLES_MAX; i++, entry++) {
@@ -131,12 +133,12 @@ void archUnmountAll() {
     }
 }
 
-void archGetPath(FS_Archive *handle, FS_Path* path, const char* pathStr, u32* archType) {
+void archGetPath(FS_Archive *handle, FS_Path *path, const char *pathStr, u32 *archType) {
     *handle = 0;
     *path = (FS_Path){PATH_EMPTY,0,""};
     if (archType) *archType = 0;
 
-    char* off = strchr(pathStr, ':');
+    char *off = strchr(pathStr, ':');
     if (!off) return;
 
     u32 prefix = off - pathStr;
@@ -152,7 +154,7 @@ void archGetPath(FS_Archive *handle, FS_Path* path, const char* pathStr, u32* ar
     }
 }
 
-FS_PathUTF8* fsMakePath8(const char* path, u32 expectedType) {
+FS_PathUTF8 *fsMakePath8(const char *path, u32 expectedType) {
     FS_Path fsPath; FS_Archive arch; u32 type;
     archGetPath(&arch, &fsPath, path, &type);
     if (!arch) {
@@ -163,7 +165,7 @@ FS_PathUTF8* fsMakePath8(const char* path, u32 expectedType) {
         __archError = MAKERESULT(RL_USAGE,RS_NOTSUPPORTED,RM_APPLICATION,RD_NOT_AUTHORIZED);
         return NULL;
     }
-    FS_PathUTF8* p = malloc(sizeof(FS_PathUTF8));
+    FS_PathUTF8 *p = malloc(sizeof(FS_PathUTF8));
     if (!p) {
         __archError = MAKERESULT(RL_FATAL,RS_OUTOFRESOURCE,RM_APPLICATION,RD_OUT_OF_MEMORY);
         return NULL;
@@ -175,21 +177,21 @@ FS_PathUTF8* fsMakePath8(const char* path, u32 expectedType) {
         return NULL;
     }
     memset(p->buf, 0, strlen(path)*3);
-    u32 units = utf8_to_utf16(p->buf, fsPath.data, strlen(path));
-    p->path = (FS_Path){PATH_UTF16, units * 2 + 2, p->buf};
+    u32 units = utf8_to_utf16(p->buf, fsPath.data, strlen(path)) + 1;
+    p->path = (FS_Path){PATH_UTF16, units * 2, p->buf};
     p->arch = arch;
     p->type = type;
     return p;
 }
 
-void fsFreePath8(FS_PathUTF8* self) {
+void fsFreePath8(FS_PathUTF8 *self) {
     if (!self) return;
     if (self->buf) free(self->buf);
     free(self);
 }
 
-bool archDirExists(const char* path) {
-    FS_PathUTF8* fsPath = fsMakePath8(path, ARCHMODE_READ);
+bool archDirExists(const char *path) {
+    FS_PathUTF8 *fsPath = fsMakePath8(path, ARCHMODE_READ);
     if (!fsPath) return __archError;
     
     Handle handle;
@@ -202,16 +204,16 @@ bool archDirExists(const char* path) {
     return false;
 }
 
-Result archDirCreate(const char* path) {
-    FS_PathUTF8* fsPath = fsMakePath8(path, ARCHMODE_WRITE);
+Result archDirCreate(const char *path) {
+    FS_PathUTF8 *fsPath = fsMakePath8(path, ARCHMODE_WRITE);
     if (!fsPath) return __archError;
     Result res = FSUSER_CreateDirectory(fsPath->arch, fsPath->path, FS_ATTRIBUTE_DIRECTORY);
     fsFreePath8(fsPath);
     return res;
 }
 
-Result archDirCreateRecursive(const char* path, bool forFile) {
-    FS_PathUTF8* fsPath = fsMakePath8(path, ARCHMODE_WRITE);
+Result archDirCreateRecursive(const char *path, bool forFile) {
+    FS_PathUTF8 *fsPath = fsMakePath8(path, ARCHMODE_WRITE);
     if (!fsPath) return __archError;
 
     Result res = 0;
@@ -221,8 +223,8 @@ Result archDirCreateRecursive(const char* path, bool forFile) {
 
     strncpy(path_copy, path, 0x3FF);
 
-    char* colon = strchr(path_copy, ':'); u32 len;
-    int slashFound = (colon - path_copy) + 2; char* cres;
+    char *colon = strchr(path_copy, ':'); u32 len;
+    int slashFound = (colon - path_copy) + 2; char *cres;
     while (true) {
         cres = strchr(path_copy + slashFound, '/');
         if (!cres) break;
@@ -245,25 +247,25 @@ Result archDirCreateRecursive(const char* path, bool forFile) {
     return res;
 }
 
-Result archDirDelete(const char* path) {
-    FS_PathUTF8* fsPath = fsMakePath8(path, ARCHMODE_WRITE);
+Result archDirDelete(const char *path) {
+    FS_PathUTF8 *fsPath = fsMakePath8(path, ARCHMODE_WRITE);
     if (!fsPath) return __archError;
     Result res = FSUSER_DeleteDirectory(fsPath->arch, fsPath->path);
     fsFreePath8(fsPath);
     return res;
 }
 
-Result archDirDeleteRecursive(const char* path) {
-    FS_PathUTF8* fsPath = fsMakePath8(path, ARCHMODE_WRITE);
+Result archDirDeleteRecursive(const char *path) {
+    FS_PathUTF8 *fsPath = fsMakePath8(path, ARCHMODE_WRITE);
     if (!fsPath) return __archError;
     Result res = FSUSER_DeleteDirectoryRecursively(fsPath->arch, fsPath->path);
     fsFreePath8(fsPath);
     return res;
 }
 
-Result archDirRename(const char* path1, const char* path2) {
-    FS_PathUTF8* fsPath1 = NULL;
-    FS_PathUTF8* fsPath2 = NULL;
+Result archDirRename(const char *path1, const char *path2) {
+    FS_PathUTF8 *fsPath1 = NULL;
+    FS_PathUTF8 *fsPath2 = NULL;
     Result res;
 
     if (!(fsPath1 = fsMakePath8(path1, ARCHMODE_WRITE))) {
@@ -282,9 +284,9 @@ exit:
     return res;
 }
 
-Result archDirMove(const char* path1, const char* path2) {
-    FS_PathUTF8* fsPath1 = NULL;
-    FS_PathUTF8* fsPath2 = NULL;
+Result archDirMove(const char *path1, const char *path2) {
+    FS_PathUTF8 *fsPath1 = NULL;
+    FS_PathUTF8 *fsPath2 = NULL;
     Result res;
 
     if (!(fsPath1 = fsMakePath8(path1, ARCHMODE_WRITE))) {
@@ -309,16 +311,16 @@ exit:
     return res;
 }
 
-Result archDirOpen(Handle* handle, const char* path) {
-    FS_PathUTF8* fsPath = fsMakePath8(path, ARCHMODE_READ);
+Result archDirOpen(Handle *handle, const char *path) {
+    FS_PathUTF8 *fsPath = fsMakePath8(path, ARCHMODE_READ);
     if (!fsPath) return __archError;
     Result res = FSUSER_OpenDirectory(handle, fsPath->arch, fsPath->path);
     fsFreePath8(fsPath);
     return res;
 }
 
-bool archFileExists(const char* path) {
-    FS_PathUTF8* fsPath = fsMakePath8(path, ARCHMODE_READ);
+bool archFileExists(const char *path) {
+    FS_PathUTF8 *fsPath = fsMakePath8(path, ARCHMODE_READ);
     if (!fsPath) return false;
 
     Handle handle;
@@ -331,16 +333,16 @@ bool archFileExists(const char* path) {
     return false;
 }
 
-Result archFileCreate(const char* path, u32 attr, u64 size) {
-    FS_PathUTF8* fsPath = fsMakePath8(path, ARCHMODE_READ);
+Result archFileCreate(const char *path, u32 attr, u64 size) {
+    FS_PathUTF8 *fsPath = fsMakePath8(path, ARCHMODE_READ);
     if (!fsPath) return __archError;
     Result res = FSUSER_CreateFile(fsPath->arch, fsPath->path, attr, size);
     fsFreePath8(fsPath);
     return res;
 }
 
-Result archFileCreateRecursive(const char* path, u32 attr, u64 size) {
-    FS_PathUTF8* fsPath = fsMakePath8(path, ARCHMODE_WRITE);
+Result archFileCreateRecursive(const char *path, u32 attr, u64 size) {
+    FS_PathUTF8 *fsPath = fsMakePath8(path, ARCHMODE_WRITE);
     if (!fsPath) return __archError;
 
     Result res = 0;
@@ -350,8 +352,8 @@ Result archFileCreateRecursive(const char* path, u32 attr, u64 size) {
 
     strncpy(path_copy, path, 0x3FF);
 
-    char* colon = strchr(path_copy, ':'); u32 len;
-    int slashFound = (colon - path_copy) + 2; char* cres;
+    char *colon = strchr(path_copy, ':'); u32 len;
+    int slashFound = (colon - path_copy) + 2; char *cres;
     while (true) {
         cres = strchr(path_copy + slashFound, '/');
         if (!cres) break;
@@ -374,17 +376,17 @@ Result archFileCreateRecursive(const char* path, u32 attr, u64 size) {
     return res;
 }
 
-Result archFileDelete(const char* path) {
-    FS_PathUTF8* fsPath = fsMakePath8(path, ARCHMODE_READ);
+Result archFileDelete(const char *path) {
+    FS_PathUTF8 *fsPath = fsMakePath8(path, ARCHMODE_READ);
     if (!fsPath) return __archError;
     Result res = FSUSER_DeleteFile(fsPath->arch, fsPath->path);
     fsFreePath8(fsPath);
     return res;
 }
 
-Result archFileRename(const char* path1, const char* path2) {
-    FS_PathUTF8* fsPath1 = NULL;
-    FS_PathUTF8* fsPath2 = NULL;
+Result archFileRename(const char *path1, const char *path2) {
+    FS_PathUTF8 *fsPath1 = NULL;
+    FS_PathUTF8 *fsPath2 = NULL;
     Result res;
 
     if (!(fsPath1 = fsMakePath8(path1, ARCHMODE_WRITE))) {
@@ -402,9 +404,9 @@ exit:
     return res;
 }
 
-Result archFileMove(const char* path1, const char* path2) {
-    FS_PathUTF8* fsPath1 = NULL;
-    FS_PathUTF8* fsPath2 = NULL;
+Result archFileMove(const char *path1, const char *path2) {
+    FS_PathUTF8 *fsPath1 = NULL;
+    FS_PathUTF8 *fsPath2 = NULL;
     Result res;
 
     if (!(fsPath1 = fsMakePath8(path1, ARCHMODE_WRITE))) {
@@ -428,8 +430,8 @@ exit:
     return res;
 }
 
-Result archFileOpen(Handle* handle, const char* path, u32 mode) {
-    FS_PathUTF8* fsPath = fsMakePath8(path, ARCHMODE_RW);
+Result archFileOpen(Handle *handle, const char *path, u32 mode) {
+    FS_PathUTF8 *fsPath = fsMakePath8(path, ARCHMODE_RW);
     if (!fsPath) return __archError;
 
     if (!mode) {

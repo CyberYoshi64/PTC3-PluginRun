@@ -4,7 +4,7 @@
 static Handle   plgLdrHandle;
 static int      plgLdrRefCount;
 
-Result  plgLdrInit(void) {
+Result plgLdrInit(void) {
     Result res = 0;
 
     if (AtomicPostIncrement(&plgLdrRefCount) == 0)
@@ -12,13 +12,12 @@ Result  plgLdrInit(void) {
     return res;
 }
 
-void    plgLdrExit(void) {
-    if (AtomicDecrement(&plgLdrRefCount))
-        return;
+void plgLdrExit(void) {
+    if (AtomicDecrement(&plgLdrRefCount)) return;
     svcCloseHandle(plgLdrHandle);
 }
 
-Result  PLGLDR__IsPluginLoaderEnabled(bool *isEnabled) {
+Result PLGLDR__IsPluginLoaderEnabled(bool *isEnabled) {
     Result res = 0;
 
     u32 *cmdbuf = getThreadCommandBuffer();
@@ -31,7 +30,7 @@ Result  PLGLDR__IsPluginLoaderEnabled(bool *isEnabled) {
     return res;
 }
 
-Result  PLGLDR__SetPluginLoaderState(bool enabled) {
+Result PLGLDR__SetPluginLoaderState(bool enabled) {
     Result res = 0;
 
     u32 *cmdbuf = getThreadCommandBuffer();
@@ -45,7 +44,7 @@ Result  PLGLDR__SetPluginLoaderState(bool enabled) {
     return res;
 }
 
-Result  PLGLDR__SetPluginLoadParameters(PluginLoadParameters *parameters) {
+Result PLGLDR__SetPluginLoadParameters(PluginLoadParameters *parameters) {
     Result res = 0;
 
     u32 *cmdbuf = getThreadCommandBuffer();

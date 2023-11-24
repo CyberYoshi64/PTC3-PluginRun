@@ -26,12 +26,48 @@ typedef struct {
 
 extern FileArchiveHandles *archiveHandles;
 
+/**
+ * @brief Initialize archive handler
+ */
 Result  archInit();
+
+/**
+ * @brief Clean up archive handler
+ */
 void    archExit();
-Result  archMount(FS_ArchiveID archID, FS_MediaType mediaType, u64 id, const char* prefix, u32 mask);
-Result  archUnmount(const char* prefix);
+
+/**
+ * @brief Mount an archive
+ * 
+ * @param archID Archive type
+ * @param mediaType Media Type
+ * @param id Archive ID (typically a title ID)
+ * @param prefix Prefix to refer archive as
+ * @param mask Mounting options (see enum FileArchiveMode)
+ */
+Result  archMount(FS_ArchiveID archID, FS_MediaType mediaType, u64 id, const char *prefix, u32 mask);
+
+/**
+ * @brief Unmount an archive
+ * 
+ * @param prefix Prefix of an archive
+ */
+Result  archUnmount(const char *prefix);
+
+/**
+ * @brief Unmount all archives of this archive handler
+ */
 void    archUnmountAll(void);
-void    archGetPath(FS_Archive *handle, FS_Path* path, const char* pathStr, u32* type);
+
+/**
+ * @brief Get archive properties of a path
+ * 
+ * @param[out] handle Output archive handle
+ * @param[out] path Output FS_Path object
+ * @param[in]  pathStr Path string
+ * @param[out] type Mounting bitmask
+ */
+void    archGetPath(FS_Archive *handle, FS_Path *path, const char *pathStr, u32 *type);
 
 /**
  * @brief Check, if a directory exists
@@ -39,14 +75,14 @@ void    archGetPath(FS_Archive *handle, FS_Path* path, const char* pathStr, u32*
  * @param path Path to the directory
  * @return True, if directory exists, false otherwise.
  */
-bool archDirExists(const char* path);
+bool archDirExists(const char *path);
 
 /**
  * @brief Create a directory
  * 
  * @param path Path to the directory
  */
-Result archDirCreate(const char* path);
+Result archDirCreate(const char *path);
 
 /**
  * @brief Create a directory and its parent folders if they don't exist
@@ -54,21 +90,21 @@ Result archDirCreate(const char* path);
  * @param path Path to the directory
  * @param forFile Whether the end of the path is a file or an extra directory
  */
-Result archDirCreateRecursive(const char* path, bool forFile);
+Result archDirCreateRecursive(const char *path, bool forFile);
 
 /**
  * @brief Delete a directory (Fail, if directory isn't empty)
  * 
  * @param path Path to the directory
  */
-Result archDirDelete(const char* path);
+Result archDirDelete(const char *path);
 
 /**
  * @brief Delete a directory and its contents
  * 
  * @param path Path to the directory
  */
-Result archDirDeleteRecursive(const char* path);
+Result archDirDeleteRecursive(const char *path);
 
 /**
  * @brief Rename a directory
@@ -76,7 +112,7 @@ Result archDirDeleteRecursive(const char* path);
  * @param path1 Path to the source directory
  * @param path2 Path to the destination directory
  */
-Result archDirRename(const char* path1, const char* path2);
+Result archDirRename(const char *path1, const char *path2);
 
 /**
  * @brief Move a directory (delete destination, if it exists)
@@ -84,7 +120,7 @@ Result archDirRename(const char* path1, const char* path2);
  * @param path1 Path to the source directory
  * @param path2 Path to the destination directory
  */
-Result archDirMove(const char* path1, const char* path2);
+Result archDirMove(const char *path1, const char *path2);
 
 /**
  * @brief Open a directory
@@ -92,7 +128,7 @@ Result archDirMove(const char* path1, const char* path2);
  * @param handle File handle
  * @param path Path to the directory
  */
-Result archDirOpen(Handle* handle, const char* path);
+Result archDirOpen(Handle *handle, const char *path);
 
 /**
  * @brief Check, if a file exists
@@ -100,7 +136,7 @@ Result archDirOpen(Handle* handle, const char* path);
  * @param path Path to the file
  * @return True, if the file exists, false otherwise.
  */
-bool archFileExists(const char* path);
+bool archFileExists(const char *path);
 
 /**
  * @brief Create a file
@@ -109,7 +145,7 @@ bool archFileExists(const char* path);
  * @param attr Attributes to create the file with
  * @param size Base file size to create with
  */
-Result archFileCreate(const char* path, u32 attr, u64 size);
+Result archFileCreate(const char *path, u32 attr, u64 size);
 
 /**
  * @brief Create a file and its parent folders if they don't exist
@@ -118,14 +154,14 @@ Result archFileCreate(const char* path, u32 attr, u64 size);
  * @param attr Attributes to create the file with
  * @param size Base file size to create with
  */
-Result archFileCreateRecursive(const char* path, u32 attr, u64 size);
+Result archFileCreateRecursive(const char *path, u32 attr, u64 size);
 
 /**
  * @brief Delete a file
  * 
  * @param path Path to the file
  */
-Result archFileDelete(const char* path);
+Result archFileDelete(const char *path);
 
 /**
  * @brief Rename a file
@@ -133,7 +169,7 @@ Result archFileDelete(const char* path);
  * @param path1 Path to the source file
  * @param path2 Path to the destination file
  */
-Result archFileRename(const char* path1, const char* path2);
+Result archFileRename(const char *path1, const char *path2);
 
 /**
  * @brief Move a file (delete destination, if it exists)
@@ -141,7 +177,7 @@ Result archFileRename(const char* path1, const char* path2);
  * @param path1 Path to the source file
  * @param path2 Path to the destination file
  */
-Result archFileMove(const char* path1, const char* path2);
+Result archFileMove(const char *path1, const char *path2);
 
 /**
  * @brief Open a file
@@ -150,4 +186,20 @@ Result archFileMove(const char* path1, const char* path2);
  * @param path Path to the file
  * @param mode Mode to open file with (0 = default)
  */
-Result archFileOpen(Handle* handle, const char* path, u32 mode);
+Result archFileOpen(Handle *handle, const char *path, u32 mode);
+
+/**
+ * @brief Construct a `FS_PathUTF8` object
+ * 
+ * @param path Path string
+ * @param expectedType Expected mounting flags
+ * @return A `FS_PathUTF8` object pointer, NULL on failure
+ */
+FS_PathUTF8 *fsMakePath8(const char *path, u32 expectedType);
+
+/**
+ * @brief Deconstruct a `FS_PathUTF8` object
+ * 
+ * @param self `FS_PathUTF8` object pointer
+ */
+void fsFreePath8(FS_PathUTF8* self);

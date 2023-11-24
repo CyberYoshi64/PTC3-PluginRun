@@ -16,6 +16,14 @@ u64 curl_progress_dlnow = 0;
 u64 curl_progress_ultotal = 0;
 u64 curl_progress_ulnow = 0;
 
+static volatile char *str_result_buf = NULL;
+static volatile size_t str_result_sz = 0;
+static volatile size_t str_result_written = 0;
+static u32 retryingFromError = 0;
+static u32 dataPosition = 0;
+char CURL_lastErrorCode[CURL_ERROR_SIZE];
+Handle downfile = 0;
+
 int appTaskInit() {
     app_tasks = malloc(APPTASK_STRUCTSIZE);
     if (!app_tasks) {
@@ -39,27 +47,22 @@ void appTaskExit() {
 float curlGetDownloadPercentage() {
 	return curl_progress_dlnow / (float)(curl_progress_dltotal ? curl_progress_dltotal : 1);
 }
+
 float curlGetUploadPercentage() {
 	return curl_progress_ulnow / (float)(curl_progress_ultotal ? curl_progress_ultotal : 1);
 }
+
 void curlGetDownloadState(u64* now, u64* total, float* perc) {
 	if (now) *now = curl_progress_dlnow;
 	if (total) *total = curl_progress_dltotal;
 	if (perc) *perc = curlGetDownloadPercentage();
 }
+
 void curlGetUploadState(u64* now, u64* total, float* perc) {
 	if (now) *now = curl_progress_ulnow;
 	if (total) *total = curl_progress_ultotal;
 	if (perc) *perc = curlGetUploadPercentage();
 }
-
-static volatile char *str_result_buf = NULL;
-static volatile size_t str_result_sz = 0;
-static volatile size_t str_result_written = 0;
-static u32 retryingFromError = 0;
-static u32 dataPosition = 0;
-char CURL_lastErrorCode[CURL_ERROR_SIZE];
-Handle downfile = 0;
 
 int progress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
 	curl_progress_dltotal = dltotal;
@@ -68,7 +71,7 @@ int progress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_
     curl_progress_ulnow = ulnow;
     if (!aptShouldClose()) return 0;
 	else return 1;
-};
+}
 
 void curlSetCommonOptions(CURL *hnd, const char* url) {
 	curl_easy_setopt(hnd, CURLOPT_BUFFERSIZE, FILE_ALLOC_SIZE);
@@ -196,8 +199,6 @@ int downloadFile(const char* URL, Handle fd) {
 		goto exit;
 	}
 
-	CURL_lastErrorCode[0] = 0;
-
 	while (true) {
 		int res = socInit(socubuf, 0x100000);
 		CURLcode cres;
@@ -301,7 +302,6 @@ int downloadString(const char* URL, char** out) {
 
 	*out = NULL;
 	int retcode = 0;
-	CURL_lastErrorCode[0] = 0;
 
 	void *socubuf = memalign(0x1000, 0x100000);
 	if (!socubuf) {
@@ -364,8 +364,6 @@ int copyFile(const char* src, const char* dest, bool isSrcFolder) {
 	void* tmp = NULL;
 	void* tmp2 = NULL;
 	void* tmp3 = NULL;
-
-	CURL_lastErrorCode[0] = 0;
 
 	if (isSrcFolder) {
 		tmp = memalign(1024, sizeof(FS_DirectoryEntry));
@@ -431,12 +429,10 @@ int copyFile(const char* src, const char* dest, bool isSrcFolder) {
 	}
 	curl_progress_dlnow += 1;
 exit:
-	if (isSrcFolder) {
-		if (source) FSDIR_Close(source);
-	} else {
-		if (source) FSFILE_Close(source);
+	if (source) {
+		if (isSrcFolder) FSDIR_Close(source);
+		else FSFILE_Close(source);
 	}
-
 	if (destH) FSFILE_Close(destH);
 	if (tmp3) free(tmp3);
 	if (tmp2) free(tmp2);
@@ -530,6 +526,7 @@ int appTask_GetResult(u32 index) {
     if (!task->done) return -3;
     return task->rc;
 }
+
 int appTask_IsDone(u32 index) {
     if (!app_tasks) return 0;
     if (index >= APPTASKS_MAX) return 0;

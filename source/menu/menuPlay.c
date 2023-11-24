@@ -18,6 +18,7 @@ u64 bootableTID[] = {
     0x000400000016DE00ULL,
     0x00040000001A1C00ULL,
 };
+
 u64 bootableUpdateMask = 0x0000000E00000000ULL;
 
 void menuPlay__ExitBtnRender(float x, float y, float w, float h, bool selected, bool touched, bool disabled) {
@@ -168,6 +169,7 @@ bool menuPlay__CYXSetupCallback2(s32 rc) {
         menuPlay__StartGame = -1;
     return true;
 }
+
 bool menuPlay__CYXSetupCallback1(s32 rc) {
     if (rc == 1) {
         menuPlay__StartGame = -1;
