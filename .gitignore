@@ -11,12 +11,11 @@
 *.old
 *.fck
 *.log
-*.t3x.png
-*.cycwar
-*.bcfnt
-assets/tempsol/
+*.t3s.png
 build/
 romfs/gfx/
-temp/
 output/
-resources/sheets/*.t3s.png
+
+# Manual
+nw4c-textureConverter.py
+resources/manual/**/*.tga
