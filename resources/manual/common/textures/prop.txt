@@ -1,8 +1,6 @@
-about	ETC1	0	0	default
+border1	LA4	0	0	default
 border3	ETC1_A4	0	0	high
 border4	ETC1_A4	0	0	default
-home	ETC1	0	0	default
-launcherTop	ETC1	0	0	default
 link_discord	L4	32	32	default
 link_github	L4	32	32	default
 link_mail	L4	32	32	default
