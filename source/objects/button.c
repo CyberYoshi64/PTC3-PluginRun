@@ -1,5 +1,6 @@
 #include "objects/button.h"
 #include "hidRead.h"
+#include "sound.h"
 
 float buttonAlpha = 1.f;
 
@@ -57,8 +58,16 @@ bool buttonTick(Button* self) {
     self->inArea = hidTouchedBox(self->pos.x, self->pos.y, self->pos.w, self->pos.h);
     bool touchedBefore = hidTouchedBoxBefore(self->pos.x, self->pos.y, self->pos.w, self->pos.h);
 
-    if ((HID_TOUCHTIME == 1) && self->inArea)
+    if ((HID_TOUCHTIME == 1) && self->inArea) {
+        soundPlay(SND(SND_TOUCH_IN));
         self->selected = true;
+    }
+
+    if (!self->inArea && HID_TOUCH.px && self->selected && touchedBefore)
+        soundPlay(SND(SND_TOUCH_OUT));
+
+    if (self->inArea && HID_TOUCHOLD.px && self->selected && !touchedBefore)
+        soundPlay(SND(SND_TOUCH_OUT_IN));
 
     if (!HID_TOUCHTIME) {
         if (touchedBefore && self->selected && !self->disabled) ack = true;

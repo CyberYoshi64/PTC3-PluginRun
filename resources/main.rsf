@@ -23,9 +23,9 @@ AccessControlInfo:
   # Exheader Format Version
   DescVersion                   : 2
   
-  # Minimum Required Kernel Version (below is for 4.5.0)
+  # Minimum Required Kernel Version (11.17)
   ReleaseKernelMajor            : "02"
-  ReleaseKernelMinor            : "33" 
+  ReleaseKernelMinor            : "58" 
 
   # ExtData
   UseExtSaveData                : false # enables ExtData       
@@ -81,14 +81,14 @@ AccessControlInfo:
   CanUseNonAlphabetAndNumber    : true
   PermitMainFunctionArgument    : true
   CanShareDeviceMemory          : true
-  RunnableOnSleep               : false
-  SpecialMemoryArrange          : true
+  RunnableOnSleep               : true
+  SpecialMemoryArrange          : false
+  CanAccessCore2                : true 
 
   # New3DS Exclusive Process Settings
-  SystemModeExt                 : $(APP_SYSTEM_MODE_EXT) # Legacy(Default)/124MB/178MB  Legacy:Use Old3DS SystemMode
-  CpuSpeed                      : $(APP_CPU_SPEED) # 268MHz(Default)/804MHz
-  EnableL2Cache                 : $(APP_ENABLE_L2_CACHE) # false(default)/true
-  CanAccessCore2                : true 
+  SystemModeExt                 : $(APP_SYSTEM_MODE_EXT) # Legacy/124MB/178MB  Legacy:Use Old3DS SystemMode
+  CpuSpeed                      : $(APP_CPU_SPEED) # 268MHz/804MHz
+  EnableL2Cache                 : $(APP_ENABLE_L2_CACHE) # false/true
 
   # Virtual Address Mappings
   IORegisterMapping:
@@ -214,7 +214,7 @@ AccessControlInfo:
    - am:net
    - boss:U
    - cam:u
-   - cecd:u
+  # - cecd:u
    - cfg:nor
    - cfg:u
    - csnd:SND
@@ -236,16 +236,16 @@ AccessControlInfo:
    - nwm::UDS
    - ptm:sysm
    - ptm:u
-   - pxi:dev
+  # - pxi:dev
    - soc:U
    - ssl:C
    - y2r:u
 
 
 SystemControlInfo:
-  SaveDataSize: 0KB # Change if the app uses savedata
+  SaveDataSize: 0KB
   RemasterVersion: $(APP_VERSION_MAJOR)
-  StackSize: 0x80000
+  StackSize: 0x40000
 
   # Modules that run services listed above should be included below
   # Maximum 48 dependencies
@@ -256,7 +256,7 @@ SystemControlInfo:
     am: 0x0004013000001502
     boss: 0x0004013000003402
     camera: 0x0004013000001602
-    cecd: 0x0004013000002602
+    #cecd: 0x0004013000002602
     cfg: 0x0004013000001702
     codec: 0x0004013000001802
     csnd: 0x0004013000002702
@@ -280,7 +280,7 @@ SystemControlInfo:
     ps: 0x0004013000003102
     ptm: 0x0004013000002202
     #qtm: 0x0004013020004202
-    ro: 0x0004013000003702
+    #ro: 0x0004013000003702
     socket: 0x0004013000002e02
     spi: 0x0004013000002302
     ssl: 0x0004013000002f02

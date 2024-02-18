@@ -29,7 +29,7 @@ bannertool makesmdh \
  -p "CyberYoshi64" \
  \
  -gs "SmileBASIC-CYX-Launcher" \
- -gl "Starte SmileBASIC mit dem CYX-Plugin." \
+ -gl "Starte SmileBASIC mit\ndem CYX-Plugin." \
  \
  -js "スマイルベーシック-CYX ランチャー" \
  -jl "プチコン3号でCYXプラグインを立ち上げる。" \

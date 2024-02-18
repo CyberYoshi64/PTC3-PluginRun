@@ -1,17 +1,20 @@
 #include "main.h"
+#include "objects/ctrhud.h"
 
 bool exiting = false;
 bool runPlugin = false;
 bool isCitra = false;
 bool blockHOME = false;
-u64 bootTitle = 0;
 u32 mainCnt = 0, frameCnt;
 float screenFadeAlpha = 1;
+u64 bootTitle;
 u64 __appID;
 
 C3D_RenderTarget    *topScr;
 C3D_RenderTarget    *botScr;
 C2D_SpriteSheet     commonSheet;
+HUD_CTR_global      *hud_global;
+HUD_CTR             *hudObj;
 
 C2D_TextBuf         errorTextBuf;
 C2D_Text            errorTextStr;
@@ -109,6 +112,7 @@ int menuDefault__Act() {
 }
 
 void drawError(const char* error, bool standalone, u32 waitButton){
+    soundPlay(SND(SND_ERROR));
     if (standalone)
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
     else
@@ -129,8 +133,10 @@ void drawError(const char* error, bool standalone, u32 waitButton){
     if (standalone)
         C3D_FrameEnd(0);
     
-    if (waitButton)
+    if (waitButton) {
         hidBlockUntilButton(waitButton);
+        soundPlay(SND(SND_BACK));
+    }
 }
 
 bool updateDlgWaitCallback(u32 *buttons, float *progress) {
@@ -213,9 +219,11 @@ int main(int argc, char const *argv[]) {
     
     APT_GetProgramID(&__appID);
 
+    osSetSpeedupEnable(true);
     gfxInit(GSP_RGB565_OES, GSP_RGB565_OES, false);
     romfsMountSelf("rom");
-    ndspInit();
+    soundInit();
+    acInit();
     httpcInit(0x1000);
     isCitra = checkCitra();
     C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
@@ -253,9 +261,9 @@ int main(int argc, char const *argv[]) {
         );
         fail = true;
     }
-    if (R_FAILED(res = archMount(ARCHIVE_ROMFS, 0, 0, "romfs", 0))) {
+    if (R_FAILED(res = archMount(ARCHIVE_ROMFS, 0, 0, "rom", 0))) {
         sprintf(errorTextData + strlen(errorTextData),
-            "archMount()[romfs] → 0x%08lX\n", res
+            "archMount()[rom] → 0x%08lX\n", res
         );
         fail = true;
     }
@@ -294,9 +302,9 @@ int main(int argc, char const *argv[]) {
         drawError(NULL, true, KEY_START);
         return 1;
     }
+    hud_global = hudCtrInit();
+    hudObj = hudCtrIconInit(hud_global);
 
-    osSetSpeedupEnable(true);
-    //MenuSound::Init();
     memset(menuStruct, 0, MENUSTRUCT_SIZE);
     currMenuPtr = &menuMain__Ptr;
 
@@ -309,7 +317,16 @@ int main(int argc, char const *argv[]) {
     for (u32 i = 0; i < C2D_SpriteSheetCount(commonSheet); i++)
         C3D_TexSetFilter(C2D_SpriteSheetGetImage(commonSheet, i).tex, GPU_LINEAR, GPU_LINEAR);
 
+    soundLoadSlot(SND_BACK, "rom:/sound/SE_BACK.bcwav", 3);
+    soundLoadSlot(SND_SELECT, "rom:/sound/SE_SELECT.bcwav", 3);
+    soundLoadSlot(SND_TOUCH_IN, "rom:/sound/SE_TOUCH_IN.bcwav", 2);
+    soundLoadSlot(SND_TOUCH_OUT, "rom:/sound/SE_TOUCH_OUT.bcwav", 2);
+    soundLoadSlot(SND_TOUCH_OUT_IN, "rom:/sound/SE_TOUCH_OUT_IN.bcwav", 2);
+    soundLoadSlot(SND_ERROR, "rom:/sound/SE_ERROR.bcwav", 2);
+    soundLoadSlot(SND_NOTICE, "rom:/sound/SE_NOTICE.bcwav", 2);
+
     // spawnUpdateCheckDialog();
+    APT_SetScreenCapturePostPermission(APTCAPTURE_ENABLED);
 
     while (aptMainLoop() && !exiting){
         hidRead();
@@ -319,7 +336,7 @@ int main(int argc, char const *argv[]) {
 
         if (HID_BTNPRESSED & KEY_Y)
             menuNext(1);
-                
+
         if (currDialog) {
             if (dialog__Tick(currDialog)) {
                 if (currDialog->mode & DIALOG_ONESHOT)
@@ -329,6 +346,7 @@ int main(int argc, char const *argv[]) {
         }        
         menuTick();
         waitIconTick();
+        hudCtrTick(hudObj);
         
         if (nextDialog && !currDialog) {
             currDialog = nextDialog;
@@ -363,6 +381,7 @@ int main(int argc, char const *argv[]) {
             255
         );
 
+        soundTick();
         C2D_SceneBegin(topScr);
         C2D_DrawRectangle(0, 0, 0, 400, 240, c1, c2, c3, c4);
         
@@ -371,6 +390,14 @@ int main(int argc, char const *argv[]) {
         
         if (currDialog)
             dialog__Render(currDialog, GFX_TOP);
+
+        hudCtrRender(hudObj);
+
+        sprintf(errorTextData, "%08lX", acIsConnected());
+        C2D_TextBufClear(errorTextBuf);
+        C2D_TextParse(&errorTextStr, errorTextBuf, errorTextData);
+        C2D_TextOptimize(&errorTextStr);
+        C2D_DrawText(&errorTextStr, C2D_WithColor|C2D_WordWrap, 0, 32, 0, 1, 1, -1, 320.f);
 
         C2D_DrawRectSolid(0, 0, 0, 400, 240, C2D_Color32f(0, 0, 0, screenFadeAlpha));
         C2D_SceneBegin(botScr);
@@ -406,7 +433,9 @@ int main(int argc, char const *argv[]) {
 
     if (!aptShouldClose()) {
         blockHOME = true;
+        soundSetAllTargetStop(15);
         for (; screenFadeAlpha < 1.0f; screenFadeAlpha += .03125f){
+            soundTick();
             C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
             C2D_SceneBegin(topScr);
             C2D_DrawRectSolid(0, 0, 0, 400, 240, C2D_Color32f(0, 0, 0, screenFadeAlpha));
@@ -419,11 +448,15 @@ int main(int argc, char const *argv[]) {
     if (dialogSheet)    C2D_SpriteSheetFree(dialogSheet);
     if (progressSheet)  C2D_SpriteSheetFree(progressSheet);
     if (commonSheet)    C2D_SpriteSheetFree(commonSheet);
+    hudCtrIconFree(hudObj);
+    hudCtrFree(hud_global);
     appTaskExit();
     httpcExit();
-    ndspExit();
+    acExit();
+    soundExit();
     archExit();
     romfsUnmount("rom");
+    archiveUnmountAll();
     C3D_RenderTargetDelete(botScr);
     C3D_RenderTargetDelete(topScr);
     C2D_Fini();
@@ -436,7 +469,6 @@ int main(int argc, char const *argv[]) {
         plgparam.noFlash = true;
         plgparam.lowTitleId = (u32)bootTitle;
         strcpy(plgparam.path, PLUGIN_PATH);
-        APT_PrepareToDoApplicationJump(0, bootTitle, MEDIATYPE_SD);
         if (!isCitra) {
             ret = loaderInit();
             if (R_FAILED(ret)) customBreak(0xDEADBEE0,0x00000001,ret);
@@ -451,10 +483,6 @@ int main(int argc, char const *argv[]) {
         ret = PLGLDR__SetPluginLoadParameters(&plgparam);
         if (R_FAILED(ret)) customBreak(0xDEADBEE1,0x00000003,ret);
         plgLdrExit();
-
-        u8 hmac[0x20];
-        APT_DoApplicationJump(NULL, 0, hmac);
-        for(;;);
     }
     return 0;
 }

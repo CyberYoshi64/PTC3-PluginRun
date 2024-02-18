@@ -29,7 +29,7 @@ int appTaskInit() {
     if (!app_tasks) {
         drawError("cURL could not be initialized.\n\nPress any key to continue.", true, KEY_ABXYSS);
     } else
-        taskThread = threadCreate(appTaskThread, NULL, 0x400000, 0x18, -1, false);
+        taskThread = threadCreate(appTaskThread, NULL, 0x400000, 0x1A, -1, false);
     return curl_global_init(CURL_GLOBAL_ALL);
 }
 
@@ -122,6 +122,10 @@ static LightEvent readyToCommit;
 static LightEvent waitCommit;
 static bool killThread = false;
 static bool writeError = false;
+
+void appTask_KillCurrent(void) {
+	killThread = true;
+};
 
 bool filecommit() {
 	if (!downfile) return false;
@@ -392,6 +396,7 @@ int copyFile(const char* src, const char* dest, bool isSrcFolder) {
 		while (true) {
 			if R_FAILED(FSDIR_Read(source, &bytesRead, 1, tmp)) goto exit;
 			if (!bytesRead) break;
+			if (killThread) break;
 			memset(tmp2, 0, 1024);
 			memset(tmp3, 0, 1024);
 			sprintf(tmp2, "%s/", src);
@@ -422,6 +427,7 @@ int copyFile(const char* src, const char* dest, bool isSrcFolder) {
 		curl_progress_ulnow = 0;
 		curl_progress_ultotal = size;
 		while (curl_progress_ulnow < curl_progress_ultotal) {
+			if (killThread) break;
 			if R_FAILED(FSFILE_Read(source, &bytesRead, curl_progress_ulnow, tmp, 32768)) goto exit;
 			if R_FAILED(FSFILE_Write(destH, &bytesWritten, curl_progress_ulnow, tmp, bytesRead, FS_WRITE_FLUSH)) goto exit;
 			curl_progress_ulnow += bytesRead;
@@ -610,6 +616,7 @@ void appTaskThread(void* arg) {
 				app_tasks_mask = 0;
                 currentTask = app_tasks;
             }
+			killThread = false;
         }
         Sleep(.01f);
     }

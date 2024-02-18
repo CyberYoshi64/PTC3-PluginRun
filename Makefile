@@ -15,7 +15,7 @@ LIBRARIES = citro2d citro3d png curl mbedtls mbedx509 mbedcrypto ctru cwav ncsnd
 
 VERSION_MAJOR := 0
 VERSION_MINOR := 0
-VERSION_MICRO := 2
+VERSION_MICRO := 0
 
 PRODUCT_CODE := CTR-N-CYXZ
 UNIQUE_ID := 0x16903

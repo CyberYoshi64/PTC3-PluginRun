@@ -9,9 +9,10 @@ MenuStructPointers menuSaveCopy__Ptr = {menuSaveCopy__Init, menuSaveCopy__Exit, 
 #define SAVECOPYENTRY_MAX   1024
 
 SaveCopyEntry saveCopyEntries[SAVECOPYENTRY_MAX] = {0};
-u32 saveCopyTotalTasks = 0;
-u32 saveCopyDoneTasks = 0;
-s32 saveCopyEndLastAppTask = -1;
+static u32 saveCopyTotalTasks = 0;
+static u32 saveCopyDoneTasks = 0;
+static s32 saveCopyEndLastAppTask = -1;
+static bool saveCopyWasCancelled = false;
 
 void menuSaveCopy__ExitBtnRender(float x, float y, float w, float h, bool selected, bool touched, bool disabled) {
     menuMain__ButtonBackground(x, y, w, h, disabled);
@@ -34,7 +35,9 @@ bool saveCopyAbortCB(s32 rc) {
                 if (appTask_Clear(saveCopyEntries[i].appTaskId) < 0) saveCopyEndLastAppTask = saveCopyEntries[i].appTaskId;
             }
         }
+        if (saveCopyEndLastAppTask >= 0) appTask_KillCurrent();
         saveCopy__Clear();
+        saveCopyWasCancelled = true;
     }
     return true;
 }
@@ -68,6 +71,7 @@ void menuSaveCopy__Exit() {
     C2D_TextBufDelete(STRUCT.fnamebuf);
     if (saveCopyEndLastAppTask >= 0) appTask_Clear(saveCopyEndLastAppTask);
     saveCopyEndLastAppTask = -1;
+    saveCopyWasCancelled = false;
 }
 
 int menuSaveCopy__Act() {
@@ -85,6 +89,7 @@ int menuSaveCopy__Act() {
             dialogSetButtonCallback(td, saveCopyAbortCB);
             dialogPrepare(td);
             dialogShow(td);
+            soundPlay(SND(SND_BACK));
             return MENUREACT_CONTINUE;
         }
         Result res;
@@ -122,7 +127,10 @@ int menuSaveCopy__Act() {
     } else if (appTask_IsWaiting()) {
         if (saveCopyEndLastAppTask >= 0) appTask_Clear(saveCopyEndLastAppTask);
         td = dialogNewTemp(DIALOG_ENABLE_BUTTON1);
-        dialogMessage(td, "Data was successfully copied.");
+        if (saveCopyWasCancelled)
+            dialogMessage(td, "The process has been cancelled.\nSome data may be missing or corrupted.");
+        else
+            dialogMessage(td, "Data was successfully copied.");
         dialogPrepare(td);
         dialogShow(td);
         menuNext(MENUID_PLAY);

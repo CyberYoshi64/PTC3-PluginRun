@@ -2,6 +2,7 @@
 #include "sheets/sheet_dialog.h"
 
 #include "hidRead.h"
+#include "sound.h"
 #include "utils.h"
 
 C2D_SpriteSheet dialogSheet;
@@ -365,6 +366,12 @@ bool dialog__Tick(Dialog* self) {
     u32 btn;
     switch (state) {
     case 0:
+        if (!self->boxAlpha) {
+            if (self->mode & DIALOG_TITLE)
+                soundPlay(SND(SND_ERROR));
+            else
+                soundPlay(SND(SND_NOTICE));
+        }
         if (self->boxAlpha < 1.f) {
             self->boxAlpha += .1f;
             self->boxScale = 1.f - ((1.f - self->boxAlpha) / 20.f);
@@ -373,12 +380,16 @@ bool dialog__Tick(Dialog* self) {
         break;
     case 1:
         if (hasButtons) {
-            if (buttonTick(&self->okayBtn) || (HID_BTNPRESSED & KEY_A))
+            if (buttonTick(&self->okayBtn) || (HID_BTNPRESSED & KEY_A)) {
+                soundPlay(SND(SND_SELECT));
                 self->rc = 1;
+            }
         }
         if (hasButton2) {
-            if (buttonTick(&self->cancelBtn) || (HID_BTNPRESSED & KEY_B))
+            if (buttonTick(&self->cancelBtn) || (HID_BTNPRESSED & KEY_B)) {
+                soundPlay(SND(SND_BACK));
                 self->rc = 2;
+            }
         }
 
         if (self->rc && self->buttonCallback) {

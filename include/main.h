@@ -30,6 +30,7 @@ extern "C" {
 #include "ptc3_smdh_bin.h"
 #include "sheets/sheet_common.h"
 #include "menu.h"
+#include "sound.h"
 
 #ifdef __cplusplus
 }
@@ -53,23 +54,6 @@ enum GameRegion {
 };
 
 int menuDefault__Act(void);
-
-/**
- * @brief Display an error message on the bottom screen.
- * 
- * @param[in] error Error string to display
- * @param[in] standalone Whether the screen is rendered outside of the frame or not
- * @param[in] waitButton Waiting for a button before returning execution
- */
-void drawError(const char* error, bool standalone, u32 waitButton);
-
-/**
- * @brief Cause a user panic with defined values for exception handler
- * @param[in] r0 Value set in R0
- * @param[in] r1 Value set in R1
- * @param[in] r2 Value set in R2
- */
-void customBreak(u32 r0, u32 r1, u32 r2);
 
 #define M_PI		3.14159265358979323846
 #define M_SQRT2		1.41421356237309504880
@@ -99,3 +83,20 @@ void customBreak(u32 r0, u32 r1, u32 r2);
 #define URL_UPDATEINFO  "https://raw.githubusercontent.com/" GITHUB_REPO "/main/updates/changelog.md"     // Changelog data; can use to check latest version as well
 #define URL_UPDATEDATA  "https://github.com/" GITHUB_REPO "/releases/download/v%s/filelist.txt"           // Update file lists
 #define URL_LATESTVER   "https://raw.githubusercontent.com/" GITHUB_REPO "/main/updates/latestver.txt"    // Latest version shorthand
+
+/**
+ * @brief Display an error message on the bottom screen.
+ * 
+ * @param[in] error Error string to display
+ * @param[in] standalone Whether the screen is rendered outside of the frame or not
+ * @param[in] waitButton Waiting for a button before returning execution
+ */
+void drawError(const char* error, bool standalone, u32 waitButton);
+
+/**
+ * @brief Cause a user panic with defined values for exception handler
+ * @param[in] r0 Value set in R0
+ * @param[in] r1 Value set in R1
+ * @param[in] r2 Value set in R2
+ */
+void customBreak(u32 r0, u32 r1, u32 r2);

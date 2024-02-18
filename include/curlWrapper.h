@@ -78,3 +78,4 @@ u32 appTask_PausedOn(void);
 void appTask_Continue(void);
 u32 appTask_GetCurrentTask(void);
 int appTask_Clear(u32 index);
+void appTask_KillCurrent(void);

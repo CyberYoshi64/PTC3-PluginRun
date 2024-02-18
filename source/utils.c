@@ -27,10 +27,18 @@ Result formatSave(u64 titleID, FS_MediaType mt, u32 files, u32 directories, bool
 }
 
 Result formatExtData(u64 titleID, FS_MediaType mt, u32 files, u32 directories) {
-    FS_ExtSaveDataInfo extDataInfo = {0};
-    extDataInfo.mediaType = mt;
-    extDataInfo.saveId = (titleID & 0xFFFFFF00)>>8;
-    return FSUSER_CreateExtSaveData(extDataInfo, directories, files, -1, ptc3_smdh_bin_len, (u8*)ptc3_smdh_bin);
+    return FSUSER_CreateExtSaveData(
+        (FS_ExtSaveDataInfo){
+            0,
+            .mediaType = mt,
+            .saveId = (u32)(titleID & 0xFFFFFF00)>>8
+        },
+        directories,
+        files,
+        -1,
+        ptc3_smdh_bin_len,
+        (u8*)ptc3_smdh_bin
+    );
 }
 
 void C3D_SetScissor$(GPU_SCISSORMODE mode, u32 x1, u32 y1, u32 x2, u32 y2) {
@@ -43,4 +51,11 @@ void C2D_FontGetTextSize(const char *str, float w, float h, float *width, float 
 	C2D_TextFontParse(&text, NULL, tb, str);
 	C2D_TextGetDimensions(&text, w, h, width, height);
     C2D_TextBufDelete(tb);
+}
+
+u32 acIsConnected(void) {
+    u32 id = 0;
+    //Result res = ACU_GetStatus(&id);
+    Result res = ACU_GetWifiStatus(&id);
+    return id;
 }

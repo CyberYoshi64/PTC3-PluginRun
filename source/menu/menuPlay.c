@@ -4,14 +4,14 @@
 #define ALPHA menuStruct->alpha
 MenuStructPointers menuPlay__Ptr = {menuPlay__Init, menuPlay__Exit, menuPlay__Act, menuPlay__Render, menuPlay__AnimIn, menuPlay__AnimOut};
 
-u32 menuPlay__AvailableGameMask = 0;
-u32 menuPlay__UsableGameMask = 0;
-u32 menuPlay__BadSaveDataMask = 0;
-u32 menuPlay__PrepareDialogState = 0;
-u32 menuPlay__PrepareGameDialogState = 0;
-u32 menuPlay__IsCYXSaveRootPresent = 0;
-int menuPlay__AppTaskFormat = 0;
-int menuPlay__StartGame = -1;
+static u32 menuPlay__AvailableGameMask = 0;
+static u32 menuPlay__UsableGameMask = 0;
+static u32 menuPlay__BadSaveDataMask = 0;
+static u32 menuPlay__PrepareDialogState = 0;
+static u32 menuPlay__PrepareGameDialogState = 0;
+static u32 menuPlay__IsCYXSaveRootPresent = 0;
+static int menuPlay__AppTaskFormat = 0;
+static int menuPlay__StartGame = -1;
 
 u64 bootableTID[] = {
     0x0004000000117200ULL,
@@ -20,6 +20,7 @@ u64 bootableTID[] = {
 };
 
 u64 bootableUpdateMask = 0x0000000E00000000ULL;
+u64 bootableDLCMask = 0x0000008C00000000ULL;
 
 void menuPlay__ExitBtnRender(float x, float y, float w, float h, bool selected, bool touched, bool disabled) {
     menuMain__ButtonBackground(x, y, w, h, disabled);
@@ -243,7 +244,7 @@ void menuPlay__Init() {
     buttonSetEnabled(&STRUCT.launchUSABtn, false);
     buttonSetEnabled(&STRUCT.launchEURBtn, false);
 
-    buttonSetupCB(&STRUCT.exitBtn, 0, 200, 100, 40, menuPlay__ExitBtnRender);
+    buttonSetupCB(&STRUCT.exitBtn, 0, 200, 128, 40, menuPlay__ExitBtnRender);
 
     Dialog* dlg = NULL;
     if (!menuPlay__AvailableGameMask) {
@@ -289,17 +290,21 @@ int menuPlay__Act() {
     buttonSetEnabled(&STRUCT.launchEURBtn, menuPlay__AvailableGameMask & BIT(GAMEREG_EUR));
 
     if (buttonTick(&STRUCT.launchJPNBtn)) {
+        soundPlay(SND(SND_SELECT));
         menuPlay__StartGame = GAMEREG_JPN;
     }
     if (buttonTick(&STRUCT.launchUSABtn)) {
+        soundPlay(SND(SND_SELECT));
         menuPlay__StartGame = GAMEREG_USA;
     }
     if (buttonTick(&STRUCT.launchEURBtn)) {
+        soundPlay(SND(SND_SELECT));
         menuPlay__StartGame = GAMEREG_EUR;
     }
 
     if (menuPlay__StartGame >= 0) {
         bootTitle = bootableTID[menuPlay__StartGame];
+        aptClearChainloader();
         if (!menuPlay__IsCYXSaveRootPresent) {
             dialogShow(STRUCT.cyxSaveRootSetupDialog);
         } else {
@@ -316,12 +321,16 @@ int menuPlay__Act() {
             menuPlay__StartGame = -1;
             menuPlay__PrepareGameDialogState = 0;
             dialogShow(STRUCT.prepareGameDialog);
+            aptSetChainloaderArgs(NULL, 0, NULL);
+            aptSetChainloader(bootTitle, MEDIATYPE_SD);
         }
         return MENUREACT_CONTINUE;
     }
 
-    if (buttonTick(&STRUCT.exitBtn) || (HID_BTNPRESSED & KEY_B))
+    if (buttonTick(&STRUCT.exitBtn) || (HID_BTNPRESSED & KEY_B)) {
+        soundPlay(SND(SND_BACK));
         return menuNext(MENUID_MAIN);
+    }
     
     return MENUREACT_CONTINUE;
 }

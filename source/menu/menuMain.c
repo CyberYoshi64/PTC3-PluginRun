@@ -4,7 +4,7 @@
 #define ALPHA menuStruct->alpha
 MenuStructPointers menuMain__Ptr = {menuMain__Init, menuMain__Exit, menuMain__Act, menuMain__Render, menuMain__AnimIn, menuMain__AnimOut};
 
-u32 menuMain__isCYXPresent;
+static u32 menuMain__isCYXPresent;
 
 void menuMain__ButtonBackground(float x, float y, float w, float h, bool disabled) {
     if (!disabled)
@@ -81,28 +81,8 @@ int menuMain__Act() {
     if (HID_BTNPRESSED & KEY_ZR)
         spawnUpdateCheckDialog();
 
-    if (HID_BTNPRESSED & KEY_DLEFT) {
-        char buf[0x40];
-        //sprintf(buf, "archFileCreateRecursive: %08lX", archFileCreateRecursive("sdmc:/PTC3PLG/savefs-test/lol.bin",0,32768));
-        archDirCreate("sdmc:/PTC3PLG");
-        archDirCreate("sdmc:/PTC3PLG/savefs-test");
-        sprintf(buf, "archFileCreate: %08lX", archFileCreate("sdmc:/PTC3PLG/savefs-test/lol.bin",0,32768));
-        dmydlg = dialogNewTemp(DIALOG_ENABLE_BUTTON1);
-        dialogMessage(dmydlg, buf);
-        dialogPrepare(dmydlg);
-        dialogShow(dmydlg);
-    };
-
-    if (HID_BTNPRESSED & KEY_DRIGHT) {
-        char buf[0x40];
-        sprintf(buf, "archDirCreateRecursive: %08lX", archDirCreateRecursive("sdmc:/PTC3PLG/savefs-test2", false));
-        dmydlg = dialogNewTemp(DIALOG_ENABLE_BUTTON1);
-        dialogMessage(dmydlg, buf);
-        dialogPrepare(dmydlg);
-        dialogShow(dmydlg);
-    };
-
     if (buttonTick(&STRUCT.play)) {
+        soundPlay(SND(SND_SELECT));
         if (!menuMain__isCYXPresent) {
             dmydlg = dialogNewTemp(DIALOG_ENABLE_BUTTON1);
             dialogMessage(dmydlg, "CYX is either not installed or broken.\n\nPlease go to Updates to download the missing data.");
@@ -114,15 +94,19 @@ int menuMain__Act() {
     }
 
     if (buttonTick(&STRUCT.updates)) {
+        soundPlay(SND(SND_SELECT));
         return menuNext(MENUID_UPDATES_TOP);
     }
 
     if (buttonTick(&STRUCT.settings)) {
+        soundPlay(SND(SND_SELECT));
         return menuNext(MENUID_SETTING_TOP);
     }
     
-    if (buttonTick(&STRUCT.exitBtn))
+    if (buttonTick(&STRUCT.exitBtn)) {
+        soundPlay(SND(SND_BACK));
         menuAskExit();
+    }
     
     return MENUREACT_CONTINUE;
 }

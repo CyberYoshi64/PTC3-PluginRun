@@ -55,3 +55,8 @@ void    C3D_SetScissor$(GPU_SCISSORMODE mode, u32 x1, u32 y1, u32 x2, u32 y2);
  * @param height Output height
  */
 void    C2D_FontGetTextSize(const char *str, float w, float h, float *width, float *height);
+
+/**
+ * @brief Check whether the console is conencted.
+ */
+u32 acIsConnected(void);

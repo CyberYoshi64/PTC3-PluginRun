@@ -15,11 +15,20 @@ typedef struct {
     } header;
     Button      exitBtn;
     C2D_Text    exitText;
+    Button      dmy1Btn;
+    Button      dmy2Btn;
+    Button      dmy3Btn;
+    Button      dmy4Btn;
+    Button      dmy5Btn;
+    Button      dmy6Btn;
     
     u32 buttonLabelFG;
     u32 buttonLabelBG;
     
 } MenuUpdatesTop__Struct;
+
+extern bool updatesDownloadedData;
+extern s32  updatesDlAppTask;
 
 void    menuUpdatesTop__Init(void);
 void    menuUpdatesTop__Exit(void);
